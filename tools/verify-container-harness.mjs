@@ -102,7 +102,7 @@ try {
 		const command = (name) => ['/verifier/run.mjs', name, output];
 		await qualify(
 			'isolated-positive',
-			{ command: command('positive'), verification: { kind: 'security', minimumTests: 19 } },
+			{ command: command('positive'), verification: { kind: 'security', minimumTests: 21 } },
 			{ status: 'verified' }
 		);
 		for (const [name, reason] of [

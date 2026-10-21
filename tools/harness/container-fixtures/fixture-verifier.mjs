@@ -62,6 +62,12 @@ if (mode === 'hang') {
 		);
 		fs.writeFileSync('/scratch/allowed', 'ephemeral');
 		check(fs.readFileSync('/scratch/allowed', 'utf8') === 'ephemeral', 'bounded scratch is writable');
+		fs.copyFileSync('/bin/true', '/scratch/exec-probe');
+		const scratchExec = spawnSync('/scratch/exec-probe', [], { timeout: 5000 });
+		check(!scratchExec.error && scratchExec.status === 0, 'bounded scratch supports staged native executables');
+		fs.copyFileSync('/bin/true', '/tmp/noexec-probe');
+		const tmpExec = spawnSync('/tmp/noexec-probe', [], { timeout: 5000 });
+		check(tmpExec.error?.code === 'EACCES', '/tmp remains non-executable');
 		check(cgroup('memory.max') === String(256 * 1024 * 1024), 'memory cgroup bound');
 		check(cgroup('memory.swap.max') === '0', 'swap disabled');
 		check(cgroup('pids.max') === '32', 'PID cgroup bound');

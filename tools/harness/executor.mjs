@@ -123,7 +123,8 @@ export function sandboxArguments(input, name) {
 		`--cpus=${c.limits.cpus}`,
 		'--ulimit=nofile=1024:1024',
 		'--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=256m',
-		`--tmpfs=/scratch:rw,nosuid,nodev,size=${c.limits.diskMB || 1024}m`,
+		// Docker merges default noexec into tmpfs options; only bounded scratch may execute staged tools.
+		`--tmpfs=/scratch:rw,nosuid,nodev,exec,size=${c.limits.diskMB || 1024}m`,
 		'--mount',
 		`type=bind,src=${c.candidate},dst=/candidate,readonly`,
 		'--mount',

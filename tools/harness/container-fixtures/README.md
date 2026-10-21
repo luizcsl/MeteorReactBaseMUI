@@ -30,10 +30,11 @@ is recorded. A built image has no registry RepoDigest until publication, so the
 executor also accepts its exact full `sha256:<image-id>`, verifies `.Id` equality,
 and runs with `--pull=never`. Mutable tags and abbreviated IDs remain forbidden.
 
-The fixture run executes 19 cases. The positive case requires 19 real assertions,
+The fixture run executes 19 cases. The positive case requires 21 real assertions,
 including UID, capabilities, no-new-privileges, external network denial, absence of
 host credentials/socket/evidence, writes denied on candidate/verifier/root files,
-writable ephemeral scratch and CPU/memory/swap/PID cgroup settings. Candidate and
+writable ephemeral scratch, native executable staging only under scratch, denied
+execution under /tmp, and CPU/memory/swap/PID cgroup settings. Candidate and
 verifier fixture modes are deliberately world-writable on the host so ordinary
 Unix file permissions cannot falsely prove read-only mounts. Other cases reject
 zero, missing, malformed, extra, failed, skipped, insufficient or misbound evidence,
@@ -45,7 +46,7 @@ The Meteor image installs release 3.5.2 and the locked npm dependency tree, pins
 Mocha driver to 3.4.0 in staged package constraints (the CLI receives its bare
 package name), records installer/release/Node/npm provenance, and warms the
 real test suite while provisioning. Execution then copies the warehouse into a
-6 GiB bounded writable scratch mount, preserving relative symlinks, and overlays
+6 GiB bounded writable, explicitly executable scratch mount, preserving relative symlinks, and overlays
 protected tests/configuration onto an ephemeral candidate copy. Candidate/verifier
 mounts and the image remain read-only; uid 65534, no capabilities, no external
 network, 6 GiB memory, 2 CPUs, 256 PIDs and a 30-minute wall budget remain enforced.
@@ -70,3 +71,9 @@ same test runtime; a determined malicious application could attack its own test
 process/report. Independent black-box acceptance/security oracles are still needed
 for that threat model. Docker is not a defense against a privileged/compromised
 host, kernel or daemon. No passing receipt by itself grants task acceptance.
+
+Docker merges a default `noexec` into tmpfs mounts unless explicitly overridden.
+Only `/scratch` declares `exec` so staged Meteor/Node/Mongo binaries can run;
+`/tmp` remains `noexec`, and neither change adds capabilities, networking or host
+writes. Both behaviors are exercised by the real positive fixture, not merely
+asserted from CLI arguments. See the [Docker mount implementation](https://github.com/moby/moby/blob/v28.0.4/daemon/oci_linux.go).

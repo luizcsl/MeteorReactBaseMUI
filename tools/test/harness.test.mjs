@@ -74,7 +74,8 @@ test('sandbox pins image and prohibits network, host credentials, writes and ext
 			'--security-opt=no-new-privileges',
 			'--user=65534:65534',
 			'--pull=never',
-			'--tmpfs=/scratch:rw,nosuid,nodev,size=512m'
+			'--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=256m',
+			'--tmpfs=/scratch:rw,nosuid,nodev,exec,size=512m'
 		])
 			assert.ok(args.includes(required));
 		assert.equal(args.filter((x) => x.includes('type=bind')).length, 2);
