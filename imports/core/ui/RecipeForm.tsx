@@ -12,10 +12,11 @@ export interface RecipeFormProps {
 	definition: RecipeDefinition;
 	initial?: RecipeData;
 	disabled?: boolean;
+	text?: { save: string; saving: string; error: string };
 	onSubmit: (data: RecipeData) => Promise<void>;
 }
 /** Rendering metadata is UX only. Server repeats validation and authorization for every operation. */
-export function RecipeForm({ definition, initial, disabled = false, onSubmit }: RecipeFormProps) {
+export function RecipeForm({ definition, initial, disabled = false, text, onSubmit }: RecipeFormProps) {
 	const [data, setData] = useState<RecipeData>(() => initial ?? initialRecipeData(definition));
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState('');
@@ -31,7 +32,7 @@ export function RecipeForm({ definition, initial, disabled = false, onSubmit }: 
 					normalized[field.name] = parseMoneyText(normalized[field.name] as string, field.scale!);
 			await onSubmit(parseRecipeData(definition, normalized));
 		} catch {
-			setError('Unable to save. Check the fields and your permission, then retry.');
+			setError(text?.error ?? 'Unable to save. Check the fields and your permission, then retry.');
 		} finally {
 			setPending(false);
 		}
@@ -108,7 +109,7 @@ export function RecipeForm({ definition, initial, disabled = false, onSubmit }: 
 					)
 				)}
 				<Button type="submit" variant="contained" disabled={disabled || pending}>
-					{pending ? 'Saving…' : 'Save'}
+					{pending ? (text?.saving ?? 'Saving…') : (text?.save ?? 'Save')}
 				</Button>
 			</Stack>
 		</form>

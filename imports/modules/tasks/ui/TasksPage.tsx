@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Meteor } from 'meteor/meteor';
+import { callMethod } from '../../../api/methodTransport';
 import { nanoid } from 'nanoid';
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItem, Stack, TextField, Typography } from '@mui/material';
 import AuthContext from '../../../app/authProvider/authContext';
@@ -33,7 +34,7 @@ export default function TasksPage() {
     setLoading(true); setError('');
     try {
       if (!Meteor.status().connected) throw new Error('offline');
-      const page = taskPage.parse(await Meteor.callAsync(TASKS_METHODS.list, { after, limit: 20 }));
+      const page = taskPage.parse(await callMethod(TASKS_METHODS.list, { after, limit: 20 }));
       if (token !== generation.current || request !== listRequest.current) return;
       setItems(previous => after ? [...previous, ...page.items] : page.items); setNext(page.next);
     } catch (failure) { if (token === generation.current && request === listRequest.current) setError(message(failure)); }
@@ -59,14 +60,14 @@ export default function TasksPage() {
     const payload = title.trim();
     if (!pendingCreate.current || pendingCreate.current.title !== payload) pendingCreate.current = { mutationId: nanoid(), title: payload };
     const attempt = pendingCreate.current;
-    await Meteor.callAsync(TASKS_METHODS.create, attempt);
+    await callMethod(TASKS_METHODS.create, attempt);
     if (pendingCreate.current === attempt) pendingCreate.current = null;
   }
   async function detail(id: string) {
     const token = generation.current; setBusy(true); setError('');
     try {
       if (!Meteor.status().connected) throw new Error('offline');
-      const task = taskDto.parse(await Meteor.callAsync(TASKS_METHODS.get, { id }));
+      const task = taskDto.parse(await callMethod(TASKS_METHODS.get, { id }));
       if (token === generation.current) { setSelected(task); setEditTitle(task.title); }
     } catch (failure) { if (token === generation.current) setError(message(failure)); }
     finally { if (token === generation.current) setBusy(false); }
@@ -94,13 +95,13 @@ export default function TasksPage() {
       <DialogContent>{error && <Alert severity="error" role="alert">{error} Feche esta janela e atualize a lista.</Alert>}<TextField autoFocus label="Título" value={editTitle} onChange={event => setEditTitle(event.target.value)} fullWidth margin="dense" slotProps={{ htmlInput: { maxLength: 200 } }} disabled={busy} />
         <Typography>Versão {selected?.version}</Typography></DialogContent>
       <DialogActions><Button onClick={() => setSelected(null)} disabled={busy}>Cancelar</Button>
-        <Button disabled={busy || !editTitle.trim()} onClick={() => selected && void mutate(() => Meteor.callAsync(TASKS_METHODS.update, { id: selected.id, version: selected.version, title: editTitle.trim(), status: selected.status }))}>Salvar</Button>
-        <Button disabled={busy || !editTitle.trim()} onClick={() => selected && void mutate(() => Meteor.callAsync(TASKS_METHODS.update, { id: selected.id, version: selected.version, title: editTitle.trim(), status: selected.status === 'done' ? 'open' : 'done' }))}>{selected?.status === 'done' ? 'Reabrir' : 'Concluir'}</Button>
+        <Button disabled={busy || !editTitle.trim()} onClick={() => selected && void mutate(() => callMethod(TASKS_METHODS.update, { id: selected.id, version: selected.version, title: editTitle.trim(), status: selected.status }))}>Salvar</Button>
+        <Button disabled={busy || !editTitle.trim()} onClick={() => selected && void mutate(() => callMethod(TASKS_METHODS.update, { id: selected.id, version: selected.version, title: editTitle.trim(), status: selected.status === 'done' ? 'open' : 'done' }))}>{selected?.status === 'done' ? 'Reabrir' : 'Concluir'}</Button>
       </DialogActions>
     </Dialog>
     <Dialog open={!!deleteTarget} onClose={() => { if (!busy) setDeleteTarget(null); }} aria-labelledby="task-delete-title">
       <DialogTitle id="task-delete-title">Excluir tarefa?</DialogTitle><DialogContent>{error && <Alert severity="error" role="alert">{error} Feche esta janela e atualize a lista.</Alert>}{deleteTarget?.title}</DialogContent>
-      <DialogActions><Button onClick={() => setDeleteTarget(null)} disabled={busy}>Cancelar</Button><Button color="error" disabled={busy} onClick={() => deleteTarget && void mutate(() => Meteor.callAsync(TASKS_METHODS.remove, { id: deleteTarget.id, version: deleteTarget.version }))}>Excluir</Button></DialogActions>
+      <DialogActions><Button onClick={() => setDeleteTarget(null)} disabled={busy}>Cancelar</Button><Button color="error" disabled={busy} onClick={() => deleteTarget && void mutate(() => callMethod(TASKS_METHODS.remove, { id: deleteTarget.id, version: deleteTarget.version }))}>Excluir</Button></DialogActions>
     </Dialog>
   </Box>;
 }

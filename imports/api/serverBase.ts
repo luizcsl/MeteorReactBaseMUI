@@ -1,3 +1,4 @@
+import { registerMethods, registerPublications } from './server/registration';
 import { assertAllowedValues, LegacyValueError } from '../legacy/allowedValues';
 import { noAvatarBase64, noImageBase64 } from './noimage';
 import { isArray, isObject, merge } from 'lodash';
@@ -953,7 +954,7 @@ export class ServerApiBase<Doc extends IDoc> {
 		const self = this;
 
 		if (Meteor.isServer) {
-			Meteor.publish(`${self.collectionName}.${publication}`, newPublicationsFunction);
+			registerPublications({ [`${self.collectionName}.${publication}`]: newPublicationsFunction });
 			self.publications[publication] = newPublicationsFunction;
 
 			Meteor.publish(
@@ -1035,7 +1036,7 @@ export class ServerApiBase<Doc extends IDoc> {
 		const self = this;
 
 		if (Meteor.isServer) {
-			Meteor.publish(`${self.collectionName}.${publication}`, newPublicationsFunction);
+			registerPublications({ [`${self.collectionName}.${publication}`]: newPublicationsFunction });
 			self.publications[publication] = newPublicationsFunction;
 		} else {
 			this.publications[publication] = true;
@@ -1263,7 +1264,7 @@ export class ServerApiBase<Doc extends IDoc> {
 			}
 		};
 		if (Meteor.isServer) {
-			Meteor.methods(method);
+			registerMethods(method);
 		}
 	};
 
@@ -1311,7 +1312,7 @@ export class ServerApiBase<Doc extends IDoc> {
 			}
 		};
 		if (Meteor.isServer) {
-			Meteor.methods(method);
+			registerMethods(method);
 		}
 	};
 

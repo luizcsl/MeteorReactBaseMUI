@@ -23,6 +23,6 @@
     "server/register.ts.template": "605bd7a0799390fa9badd6bd6270b70bb2915d0f18c0ee94837a932fa8db2d7f",
     "server/repository.ts.template": "65b3890566e6d7530d0e9270bfb45639db3b2214c875c4f87a66942084e895b6",
     "tests/policy.test.ts.template": "a875cedb37bb0247276d8ba8da9a7eac4e0ccab85b48157e7a5ff6ad59160438",
-    "ui/__Module__Page.tsx.template": "22b1d81b6b52f2a81d63ee8277c9cad1774f79355f33b6e6333c19ce698adb95"
+    "ui/__Module__Page.tsx.template": "b0686c49711feab8f797f5be4116f91f2344513b8ac7875d02707d20af71253c"
   }
 }

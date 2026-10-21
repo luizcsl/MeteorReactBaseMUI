@@ -14,6 +14,7 @@ export function mongoRecipeRepository(name: string): RecipeRepository {
 		};
 	};
 	return {
+		observeChanges: async (invalidate) => collection.find({}, { fields: { _id: 1, version: 1 } }).observeChanges({ added: invalidate, changed: invalidate, removed: invalidate }),
 		find: async (scope, id) => (await collection.findOneAsync(selector(scope, id))) ?? null,
 		list: async (scope, filters, limit) => {
 			const filter = Object.fromEntries(Object.entries(filters).map(([key, value]) => [`data.${key}`, value]));

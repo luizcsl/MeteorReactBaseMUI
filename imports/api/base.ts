@@ -1,3 +1,5 @@
+import { subscribe } from './subscriptionTransport';
+import { callMethod } from './methodTransport';
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
 import { countsCollection } from '../api/countCollection';
@@ -168,15 +170,16 @@ export class ApiBase<Doc extends IDoc> {
 	 * @param  {String} name - Meteor method name
 	 * @param params
 	 */
-	callMethod(name: string, ...params: any[]) {
-		if (Meteor.status().connected) {
-			Meteor.call(`${this.collectionName}.${name}`, ...params);
-		} else {
+	callMethod(name: string, ...params: any[]): void {
+		const callback = typeof params[params.length - 1] === 'function' ? params.pop() : undefined;
+		if (!Meteor.status().connected) {
 			const error = new Meteor.Error('offline', 'Sem conexão com o servidor. Tente novamente quando estiver online.');
-			const callback = params[params.length - 1];
-			if (typeof callback === 'function') callback(error);
-			else throw error;
+			if (callback) { callback(error); return; }
+			throw error;
 		}
+		const result = callMethod(`${this.collectionName}.${name}`, ...params);
+		if (callback) { void result.then((value) => callback(undefined, value), (error) => callback(error)); return; }
+		void result.catch((error) => console.error(error));
 	}
 
 	callMethodWithPromise(name: string, ...params: any[]): Promise<any> {
@@ -334,9 +337,9 @@ export class ApiBase<Doc extends IDoc> {
 	} | null {
 		const self = this;
 		if (Meteor.isClient) {
-			const subsHandle = Meteor.subscribe(`${this.collectionName}.${api}`, ...param);
+			const subsHandle = subscribe(`${this.collectionName}.${api}`, ...param);
 
-			const subHandleCounter = Meteor.subscribe(`${this.collectionName}.count${api}`, param[0] || {});
+			const subHandleCounter = subscribe(`${this.collectionName}.count${api}`, param[0] || {});
 			const countResult = subHandleCounter.ready() ? self.counts.findOne({ _id: api + 'Total' }) : null;
 			const count = countResult ? countResult.count : 0;
 

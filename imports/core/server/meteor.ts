@@ -1,3 +1,4 @@
+import { registerMethods } from '../../api/server/registration';
 import { Meteor } from 'meteor/meteor';
 import { DDPRateLimiter } from 'meteor/ddp-rate-limiter';
 import { operationHandler, OperationError, type Operation, type ContextBuilder } from './operations';
@@ -5,7 +6,7 @@ import { operationHandler, OperationError, type Operation, type ContextBuilder }
 export function registerOperation<I, O>(operation: Operation<I, O>, buildContext: ContextBuilder): void {
   if (!Meteor.isServer) throw new Error('Server registration imported on client');
   const invoke = operationHandler(operation, buildContext);
-  Meteor.methods({ [operation.name]: async function(...args: unknown[]) {
+  registerMethods({ [operation.name]: async function(...args: unknown[]) {
     try { return await invoke.apply(this, args); } catch (error) {
       if (error instanceof OperationError) throw new Meteor.Error(error.code, error.message);
       // Do not expose validation output, Mongo errors or internal implementation details.

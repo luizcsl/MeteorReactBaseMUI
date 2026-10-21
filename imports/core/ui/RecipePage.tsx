@@ -17,6 +17,7 @@ export interface RecipeRow {
 	data: RecipeData;
 }
 export interface RecipeClient {
+	subscribe?: (filters: RecipeData, limit: number, parentId: string | null, onState: (state: { rows: RecipeRow[]; loading: boolean; error: Error | null }) => void) => { stop(): void };
 	list: (filters: RecipeData, limit: number, parentId?: string | null) => Promise<RecipeRow[]>;
 	create: (data: RecipeData, parentId: string | null, mutationId: string) => Promise<RecipeRow>;
 	update: (id: string, version: number, data: RecipeData) => Promise<RecipeRow>;
@@ -85,13 +86,32 @@ function ScopedRecipePage({ definition, client, parentId = null }: RecipePagePro
 			const next = await client.list(parseRecipeFilters(definition, normalized), 100, parentId);
 			if (token === serial.current && sameQuery(query)) setRows(next);
 		} catch {
-			if (token === serial.current && sameQuery(query))
-				setError('Unable to load records. You may not have permission.');
+			if (token === serial.current && sameQuery(query)) {
+				setRows([]); setError('Unable to load records. You may not have permission.');
+			}
 		} finally {
 			if (token === serial.current && sameQuery(query)) setLoading(false);
 		}
 	};
 	useEffect(() => {
+		if (client.subscribe) {
+			setRows([]); setLoading(true); setError('');
+			let handle: { stop(): void } | undefined;
+			let active = true;
+			try {
+				const normalized = { ...filters };
+				for (const field of definition.fields)
+					if (field.type === 'money' && typeof normalized[field.name] === 'string')
+						normalized[field.name] = parseMoneyText(normalized[field.name] as string, field.scale!);
+				handle = client.subscribe(parseRecipeFilters(definition, normalized), 100, parentId, (state) => {
+					if (!active) return;
+					setRows(state.error ? [] : state.rows); setLoading(state.loading);
+					if (state.error || (state.loading && !state.rows.length)) setEditing(null);
+					setError(state.error ? 'Unable to load records. You may not have permission.' : '');
+				});
+			} catch { setRows([]); setLoading(false); setError('Invalid filters.'); }
+			return () => { active = false; handle?.stop(); serial.current++; };
+		}
 		void refresh();
 		return () => {
 			serial.current++;

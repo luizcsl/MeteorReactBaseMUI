@@ -37,6 +37,7 @@ export interface RecipeDTO {
 	data: RecipeData;
 }
 export interface RecipeRepository {
+	observeChanges?: (invalidate: () => void) => Promise<{ stop(): void | Promise<void> }>;
 	find(scope: RecipeScope, id: string): Promise<RecipeRecord | null>;
 	list(scope: RecipeScope, filters: RecipeData, limit: number): Promise<RecipeRecord[]>;
 	insert(record: RecipeRecord): Promise<RecipeRecord>;
@@ -51,7 +52,11 @@ export interface RecipeRepository {
 export interface RecipePorts {
 	repository: RecipeRepository;
 	resolveIdentity: (userId: string) => Promise<RecipeIdentity>;
+	/** Mandatory for reactive registration: observe account, membership, and policy revocation. */
+	observeIdentity?: (userId: string, invalidate: () => void) => Promise<{ stop(): void | Promise<void> }>;
 	parentExists?: (scope: RecipeScope, id: string) => Promise<boolean>;
+	/** Required for reactive master/detail: invalidate on parent visibility/lifecycle changes. */
+	observeDependencies?: (invalidate: () => void) => Promise<{ stop(): void | Promise<void> }>;
 	/** Must scope the target to this verified identity, never just test its existence. */
 	referenceExists?: (identity: RecipeIdentity, target: string, id: string) => Promise<boolean>;
 }
