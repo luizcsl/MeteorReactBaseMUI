@@ -28,7 +28,7 @@ The toolkit under `tools/` never runs inside the application. An external harnes
 
 ## Capability profiles
 
-The reference profile is online, authenticated, owner-scoped CRUD. Shared/tenant documents, transactional workflows, offline queues, arbitrary third-party integration and AI runtime need their own contracts and integration tests. The policy core can express verified server-side tenant context, but a client-supplied tenant ID is never a membership proof.
+The original reference profile is online, authenticated, owner-scoped CRUD. The [structured recipe layer](recipes/structured-recipes.md) adds bounded owner, tenant/team, master/detail and approval presets with shared metadata, runtime contracts and UI. Transactional parent lifecycles, distributed queues, arbitrary third-party integration and AI runtime still need explicit integration contracts and tests. Read the [v2 toolkit guide](AI_TOOLKIT_V2.md) before selecting a preset. The policy core can express verified server-side tenant context, but a client-supplied tenant ID is never a membership proof.
 
 Legacy schemas remain for UI compatibility; they are not authorization schemas. New DTOs use strict parsers and preserve document generics. Public output must be projected even when the caller owns the document.
 

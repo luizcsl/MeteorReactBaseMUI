@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"name": "teamnotes",
+	"profile": "team",
+	"fields": [
+		{ "name": "title", "label": "Title", "type": "string", "required": true, "maxLength": 160 },
+		{ "name": "category", "label": "Category", "type": "enum", "required": true, "values": ["general", "planning"] }
+	],
+	"filters": ["category"],
+	"states": ["active", "archived"],
+	"transitions": [{ "from": "active", "to": "archived", "roles": ["member"] }],
+	"permissions": { "read": ["member"], "write": ["member"] }
+}

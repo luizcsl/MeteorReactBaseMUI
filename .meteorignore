@@ -16,3 +16,6 @@ melhorias.md
 scripts/**
 jatai-web/**
 .agent-state/**
+
+# Node-only property, migration and recipe qualification suites.
+tests/*.node.test.ts

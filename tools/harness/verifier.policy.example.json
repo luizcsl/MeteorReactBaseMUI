@@ -1,0 +1,20 @@
+{
+	"version": 1,
+	"scope": ["imports/modules/ownednotes/"],
+	"overlay": ["tests", "tools", "tsconfig.json", "package.json", "package-lock.json", ".meteorignore"],
+	"gates": {
+		"acceptance": {
+			"command": ["/opt/toolchain/bin/node", "/verifier/gate.mjs", "tests/core.node.test.ts"],
+			"minimumTests": 12
+		},
+		"security": {
+			"command": ["/opt/toolchain/bin/node", "/verifier/gate.mjs", "tests/security-properties.node.test.ts"],
+			"minimumTests": 5
+		},
+		"regression": {
+			"command": ["/opt/toolchain/bin/node", "/verifier/gate.mjs", "tests/core.node.test.ts"],
+			"minimumTests": 12
+		}
+	},
+	"baselineCommits": ["REPLACE_WITH_REVIEWED_FULL_COMMIT"]
+}

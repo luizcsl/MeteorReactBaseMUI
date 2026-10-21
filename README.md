@@ -6,12 +6,12 @@ Docker e ferramentas de qualidade.
 
 ## Desenvolvimento com IA
 
-Leia [AI Development](docs/AI_DEVELOPMENT.md), [contrato do harness Synergia Code](docs/HARNESS_SYNERGIA.md), [migração](docs/MIGRATION_AI_READY.md) e [evidências de validação](docs/AI_READY_VALIDATION.md). O caminho novo usa contratos executáveis, CRUD de referência e ferramentas determinísticas; não exige LLM em runtime.
+Leia [AI Development](docs/AI_DEVELOPMENT.md), [contrato do harness Synergia Code](docs/HARNESS_SYNERGIA.md), [migração](docs/MIGRATION_AI_READY.md) e [evidências de validação](docs/AI_READY_VALIDATION.md). O caminho novo usa contratos executáveis, CRUD de referência e ferramentas determinísticas; não exige LLM em runtime. A [segunda camada de ferramentas](docs/AI_TOOLKIT_V2.md) acrescenta análise AST, evolução estrutural, arquétipos, UI derivada de contratos, testes de mutação e um executor externo com bloqueio seguro quando não há isolamento.
 
 ## Stack atual
 
 - Meteor 3.5.2 com Node.js 24.15 no build e no runtime Docker;
-- React 19.2 e React Router 6.30;
+- React 19.2 e React Router 7.18;
 - Material UI 7.3 e MUI X Data Grid 8.28;
 - MongoDB 7 com replica set;
 - TypeScript estrito, sem baseline de erros;

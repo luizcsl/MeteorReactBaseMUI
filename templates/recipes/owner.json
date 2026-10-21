@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"name": "ownednotes",
+	"profile": "owner",
+	"fields": [
+		{ "name": "title", "label": "Title", "type": "string", "required": true, "maxLength": 160 },
+		{ "name": "done", "label": "Done", "type": "boolean", "required": true }
+	],
+	"filters": ["done"],
+	"states": ["active"],
+	"transitions": [],
+	"permissions": { "read": ["owner"], "write": ["owner"] }
+}

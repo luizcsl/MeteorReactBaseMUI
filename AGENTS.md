@@ -13,4 +13,6 @@ Read `docs/AI_DEVELOPMENT.md` before changing architecture and the nearest modul
 - The external harness must isolate filesystem/network/credentials and protect tests/gates. Repository scripts are diagnostics, not a sandbox.
 - Record observable evidence, residual risks and migration effects in the delivery report.
 
-Recipes: `docs/recipes/owner-crud.md`, `docs/HARNESS_SYNERGIA.md`. Migration: `docs/MIGRATION_AI_READY.md`.
+Structured changes: `docs/AI_TOOLKIT_V2.md`, `docs/STRUCTURAL_EVOLUTION.md`. Use metadata and verified plans rather than editing generated files.
+
+Recipes: `docs/recipes/structured-recipes.md`, `docs/recipes/owner-crud.md`, `docs/HARNESS_SYNERGIA.md`. Migration: `docs/MIGRATION_AI_READY.md`.

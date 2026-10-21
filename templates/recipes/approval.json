@@ -1,0 +1,17 @@
+{
+	"schemaVersion": 1,
+	"name": "requests",
+	"profile": "approval",
+	"fields": [
+		{ "name": "title", "label": "Title", "type": "string", "required": true, "maxLength": 160 },
+		{ "name": "amount", "label": "Amount", "type": "integer", "required": true, "min": 0, "max": 1000000 }
+	],
+	"filters": ["title"],
+	"states": ["draft", "submitted", "approved", "rejected"],
+	"transitions": [
+		{ "from": "draft", "to": "submitted", "roles": ["owner"] },
+		{ "from": "submitted", "to": "approved", "roles": ["reviewer"] },
+		{ "from": "submitted", "to": "rejected", "roles": ["reviewer"] }
+	],
+	"permissions": { "read": ["owner", "reviewer"], "write": ["owner"] }
+}

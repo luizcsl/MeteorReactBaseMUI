@@ -28,10 +28,13 @@ jobs:
         run: |
           npm run typecheck
           npm run test:core
+          npm run test:mutations
           npm run test:toolkit
           npm run boundaries:check
           npm run templates:verify
           npm run docs:verify
+      - name: Real Mongo migration adapter qualification
+        run: npm run test:migrations
       - name: Real Meteor, Mongo, DDP and HTTP security suites
         run: |
           set -o pipefail

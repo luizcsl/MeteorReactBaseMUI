@@ -5,8 +5,21 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 const dir = await mkdtemp(path.join(tmpdir(), 'boilerplate-core-'));
 try {
- const outfile = path.join(dir, 'core.cjs');
- await build({ entryPoints: ['tests/core.node.test.ts'], bundle: true, platform: 'node', format: 'cjs', outfile });
- const result = spawnSync(process.execPath, ['--test', outfile], { stdio: 'inherit' });
- process.exitCode = result.status ?? 1;
-} finally { await rm(dir, { recursive: true, force: true }); }
+	const outfile = path.join(dir, 'core.cjs');
+	await build({
+		stdin: {
+			contents:
+				"import './tests/core.node.test.ts'; import './tests/security-properties.node.test.ts'; import './tests/recipe-security-properties.node.test.ts';",
+			resolveDir: process.cwd(),
+			loader: 'ts'
+		},
+		bundle: true,
+		platform: 'node',
+		format: 'cjs',
+		outfile
+	});
+	const result = spawnSync(process.execPath, ['--test', outfile], { stdio: 'inherit' });
+	process.exitCode = result.status ?? 1;
+} finally {
+	await rm(dir, { recursive: true, force: true });
+}

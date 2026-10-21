@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"name": "lineitems",
+	"profile": "master-detail",
+	"fields": [
+		{ "name": "title", "label": "Description", "type": "string", "required": true, "maxLength": 160 },
+		{ "name": "quantity", "label": "Quantity", "type": "integer", "required": true, "min": 1, "max": 10000 }
+	],
+	"filters": ["title"],
+	"states": ["active"],
+	"transitions": [],
+	"permissions": { "read": ["owner"], "write": ["owner"] }
+}

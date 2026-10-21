@@ -1,0 +1,37 @@
+# Reviewed provisioning only. NODE_IMAGE must be the resolved official Node RepoDigest.
+# This image remains local to the CI runner. It must never be built from model output.
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+ENV HOME=/opt/meteor-home METEOR_ALLOW_SUPERUSER=1 CYPRESS_INSTALL_BINARY=0 DO_NOT_TRACK=1
+WORKDIR /opt/toolchain
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts && node node_modules/esbuild/install.js \
+    && mkdir -p /opt/meteor-home /opt/toolchain/bin \
+    && ln -s /usr/local/bin/node /opt/toolchain/bin/node \
+    && node --version > /opt/toolchain/node-version \
+    && npm --version > /opt/toolchain/npm-version
+# Installer and release are fetched only in the explicitly networked provisioning phase.
+# Capture the installer hash, exact release and package locks in the locally built image.
+RUN curl --fail --show-error --silent --location 'https://install.meteor.com/?release=3.5.2' -o /opt/toolchain/install-meteor.sh \
+    && sha256sum /opt/toolchain/install-meteor.sh > /opt/toolchain/installer.sha256 \
+    && sh /opt/toolchain/install-meteor.sh \
+    && /opt/meteor-home/.meteor/meteor --version > /opt/toolchain/meteor-release \
+    && grep -Fx 'Meteor 3.5.2' /opt/toolchain/meteor-release
+WORKDIR /opt/meteor-warm-app
+COPY .meteor .meteor
+COPY package.json package-lock.json tsconfig.json .meteorignore ./
+COPY imports imports
+COPY client client
+COPY server server
+COPY tests tests
+COPY public public
+COPY private private
+COPY tools/harness/container-fixtures/meteor /opt/toolchain/meteor-qualification
+RUN ln -s /opt/toolchain/node_modules node_modules \
+    && node /opt/toolchain/meteor-qualification/warm.mjs /opt/meteor-warm-app /opt/meteor-home/.meteor/meteor /opt/toolchain/warm-report.json \
+    && chmod -R a+rX /opt/meteor-home /opt/toolchain
+# Source and compiled app are not needed at run time; only the warmed pinned warehouse is reused.
+RUN rm -rf /opt/meteor-warm-app
+ENV HOME=/scratch/home METEOR_ALLOW_SUPERUSER=0
+USER 65534:65534
+WORKDIR /candidate

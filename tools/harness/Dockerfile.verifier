@@ -1,0 +1,15 @@
+# Operator supplies an approved immutable Node 24 image, e.g. node@sha256:<verified digest>.
+# Build only from a reviewed checkout. Model candidates must never control this build context.
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+WORKDIR /opt/toolchain
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts && mkdir -p /opt/toolchain/bin && ln -s /usr/local/bin/node /opt/toolchain/bin/node
+# esbuild has a platform package and needs its official installer when scripts were disabled.
+RUN node node_modules/esbuild/install.js
+ENV PATH="/opt/toolchain/bin:/usr/local/bin:/usr/bin:/bin" HOME="/scratch/home"
+USER 65534:65534
+WORKDIR /candidate
+# No application, secrets or candidate package-install step in the image.
+# This image supports the provided Node contract gates. Meteor/DDP gates need an independently
+# reviewed prebuilt Meteor image and trusted black-box verifier; never install on candidate execution.

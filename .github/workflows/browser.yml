@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies and browser
         run: npm ci
+      - name: Qualify schema-driven forms and async UI states
+        run: npm run test:recipe-ui
       - name: Install pinned Meteor release
         run: |
           curl --fail --show-error --silent 'https://install.meteor.com/?release=3.5.2' -o /tmp/install-meteor.sh
@@ -68,6 +70,7 @@ jobs:
           name: browser-qualification
           path: |
             .ai-artifacts/browser-app.log
+            .ai-artifacts/recipe-ui.json
             .cypress/screenshots
           if-no-files-found: warn
           retention-days: 7

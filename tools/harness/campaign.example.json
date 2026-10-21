@@ -1,0 +1,43 @@
+{
+	"version": 1,
+	"id": "replace-with-new-campaign-id",
+	"repository": "/absolute/reviewed/repository",
+	"output": "/absolute/separate/evidence",
+	"model": {
+		"endpoint": "http://127.0.0.1:11434/v1/chat/completions",
+		"name": "REPLACE_WITH_INSTALLED_MODEL",
+		"maxTokens": 4096,
+		"seconds": 120,
+		"responseBytes": 1000000
+	},
+	"budget": { "seconds": 1800, "tokens": 500000 },
+	"repetitions": 2,
+	"seed": 1729,
+	"arms": {
+		"original": { "commit": "REPLACE_WITH_ORIGINAL_40_HEX_COMMIT" },
+		"docs": { "commit": "REPLACE_WITH_DOCS_ONLY_40_HEX_COMMIT" },
+		"contracts": { "commit": "REPLACE_WITH_TOOLKIT_40_HEX_COMMIT" }
+	},
+	"sandbox": {
+		"image": "REPLACE_WITH_APPROVED_REGISTRY_IMAGE@sha256:REPLACE_WITH_64_HEX_DIGEST",
+		"verifier": "/absolute/separate/reviewed-verifier",
+		"engine": "docker",
+		"limits": { "seconds": 300, "memoryMB": 2048, "diskMB": 1024, "cpus": 2, "pids": 128, "outputBytes": 1000000 }
+	},
+	"tasks": [
+		{
+			"id": "heldout-owner-change",
+			"split": "heldout",
+			"prompt": "REPLACE with independently authored acceptance requirements. Do not include held-out tests in model context.",
+			"context": { "original": [], "docs": [], "contracts": [] },
+			"allowedPaths": ["imports/modules/ownednotes/"],
+			"attempts": 2,
+			"checks": {
+				"acceptance": { "command": ["/verifier/run.mjs"], "minimumTests": 1 },
+				"security": { "command": ["/verifier/run.mjs"], "minimumTests": 5 },
+				"regression": { "command": ["/verifier/run.mjs"], "minimumTests": 12 },
+				"scope": { "command": ["/verifier/run.mjs"], "minimumTests": 1 }
+			}
+		}
+	]
+}

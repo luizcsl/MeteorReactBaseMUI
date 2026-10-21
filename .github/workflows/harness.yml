@@ -1,0 +1,96 @@
+name: Real container harness qualification
+on:
+  pull_request:
+  push:
+    branches: [main, master, 'feat/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: harness-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  container-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - name: Install locked qualification tools without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/esbuild/install.js
+          node --test tools/harness/container-fixtures/meteor/report.test.mjs
+      - name: Provision official Node and freeze its immutable digest
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker version
+          docker pull node:24.19.0-bookworm
+          image="$(docker image inspect node:24.19.0-bookworm --format '{{index .RepoDigests 0}}')"
+          [[ "$image" =~ ^node@sha256:[a-f0-9]{64}$ ]]
+          mkdir -p .ai-artifacts/harness-fixtures
+          printf '%s\n' "$image" > .ai-artifacts/harness-fixtures/approved-image.txt
+          docker image inspect "$image" > .ai-artifacts/harness-fixtures/image-inspect.json
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: Qualify real isolation, evidence denials and enforced budgets
+        env:
+          HARNESS_IMAGE: ${{ steps.image.outputs.image }}
+        run: node tools/verify-container-harness.mjs --image="$HARNESS_IMAGE" --mode=fixtures
+      - name: Preserve real container receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: real-container-harness
+          path: .ai-artifacts/harness-fixtures
+          if-no-files-found: error
+          retention-days: 14
+  meteor-in-container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - name: Install locked qualification tools without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/esbuild/install.js
+          node --test tools/harness/container-fixtures/meteor/report.test.mjs
+      - name: Build and warm reviewed Meteor toolchain, without image publication
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ai-artifacts/harness-meteor
+          docker version
+          docker pull node:24.19.0-bookworm
+          base="$(docker image inspect node:24.19.0-bookworm --format '{{index .RepoDigests 0}}')"
+          [[ "$base" =~ ^node@sha256:[a-f0-9]{64}$ ]]
+          printf '%s\n' "$base" > .ai-artifacts/harness-meteor/approved-base-image.txt
+          docker build --pull=false --build-arg NODE_IMAGE="$base" \
+            --file tools/harness/Dockerfile.meteor-verifier \
+            --iidfile .ai-artifacts/harness-meteor/image-id.txt . \
+            2>&1 | tee .ai-artifacts/harness-meteor/image-build.log
+          image="$(cat .ai-artifacts/harness-meteor/image-id.txt)"
+          [[ "$image" =~ ^sha256:[a-f0-9]{64}$ ]]
+          docker image inspect "$image" > .ai-artifacts/harness-meteor/image-inspect.json
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: Qualify protected Meteor, Mongo and DDP tests without network
+        env:
+          HARNESS_IMAGE: ${{ steps.image.outputs.image }}
+        run: node tools/verify-container-harness.mjs --image="$HARNESS_IMAGE" --mode=meteor
+      - name: Preserve Meteor container receipts and provisioning logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: real-meteor-container-harness
+          path: .ai-artifacts/harness-meteor
+          if-no-files-found: error
+          retention-days: 14
