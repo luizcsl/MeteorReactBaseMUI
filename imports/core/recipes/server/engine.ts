@@ -28,6 +28,8 @@ export interface RecipeRecord {
 	version: number;
 	state: string;
 	data: RecipeData;
+	/** Trusted server timestamp; legacy records may omit it. Never projected in DTOs. */
+	updatedAt?: Date;
 }
 export interface RecipeDTO {
 	id: string;
@@ -38,7 +40,10 @@ export interface RecipeDTO {
 }
 /** Server-only compiled-query adapter. Callers MUST build authorized selectors; never expose raw queries over DDP. */
 export interface RecipeQueryPort {
-	find(selector: Record<string, unknown>, options: { sort: Record<string, 1 | -1>; limit: number; projection: Record<string, 1> }): Promise<Record<string, unknown>[]>;
+	find(
+		selector: Record<string, unknown>,
+		options: { sort: Record<string, 1 | -1>; limit: number; projection: Record<string, 1> }
+	): Promise<Record<string, unknown>[]>;
 	aggregate(pipeline: Record<string, unknown>[]): Promise<Record<string, unknown>[]>;
 }
 export interface RecipeRepository {
@@ -51,12 +56,25 @@ export interface RecipeRepository {
 		scope: RecipeScope,
 		id: string,
 		version: number,
-		next: Pick<RecipeRecord, 'data' | 'state' | 'version'>
+		next: Pick<RecipeRecord, 'data' | 'state' | 'version' | 'updatedAt'>
 	): Promise<boolean>;
 	remove(scope: RecipeScope, id: string, version: number): Promise<boolean>;
 }
 export interface RecipePorts {
 	repository: RecipeRepository;
+	/** Server-only repository decoration, applied once before registration. */
+	configureRepository?: (repository: RecipeRepository) => RecipeRepository;
+	/** Must atomically check relationships AND delete the versioned root in one transaction. */
+	removeWithRelations?: (scope: RecipeScope, row: RecipeRecord, expectedVersion: number) => Promise<boolean>;
+	/** Trusted clock and workflow hook, never invocation-controlled. */
+	now?: () => Date;
+	beforeTransition?: (context: {
+		identity: RecipeIdentity;
+		scope: RecipeScope;
+		row: RecipeRecord;
+		to: string;
+		now: Date;
+	}) => void | Promise<void>;
 	resolveIdentity: (userId: string) => Promise<RecipeIdentity>;
 	/** Mandatory for reactive registration: observe account, membership, and policy revocation. */
 	observeIdentity?: (userId: string, invalidate: () => void) => Promise<{ stop(): void | Promise<void> }>;
@@ -86,6 +104,11 @@ const version = (v: unknown): number => {
 /** Server-only service. resolveIdentity MUST revalidate active account and current membership per call. */
 export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 	const d = validateDefinition(raw);
+	const now = (): Date => {
+		const value = ports.now ? ports.now() : new Date();
+		if (!(value instanceof Date) || !Number.isFinite(value.getTime())) throw new OperationError('invalid-input');
+		return new Date(value.getTime());
+	};
 	if (d.profile === 'master-detail' && !ports.parentExists)
 		throw new Error('Master/detail requires a scoped parent repository');
 	if (d.fields.some((f) => f.type === 'reference') && !ports.referenceExists)
@@ -201,6 +224,7 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 				ownerId: who.userId,
 				version: 1,
 				state: d.states[0],
+				updatedAt: now(),
 				data,
 				...(who.tenantId ? { tenantId: who.tenantId } : {}),
 				...(typeof v.parentId === 'string' ? { parentId: v.parentId } : {})
@@ -224,10 +248,12 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			if (d.profile === 'approval' && row.state !== d.states[0]) throw new OperationError('forbidden');
 			const data = parseRecipeData(d, v.data);
 			await references(who, data);
+			const updatedAt = now();
 			if (
 				!(await ports.repository.compareAndSet(s, row._id, row.version, {
 					data,
 					state: row.state,
+					updatedAt,
 					version: row.version + 1
 				}))
 			)
@@ -247,10 +273,13 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			);
 			if (!permitted || (d.profile === 'approval' && t.roles.includes('reviewer') && row.ownerId === who.userId))
 				throw new OperationError('forbidden');
+			const updatedAt = now();
+			await ports.beforeTransition?.({ identity: who, scope: s, row, to: t.to, now: updatedAt });
 			if (
 				!(await ports.repository.compareAndSet(s, row._id, row.version, {
 					data: row.data,
 					state: t.to,
+					updatedAt,
 					version: row.version + 1
 				}))
 			)
@@ -262,7 +291,12 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			const who = await identity(userId);
 			const { s, row } = await get(who, v.id, d.permissions.write);
 			if (d.profile === 'approval' && row.state !== d.states[0]) throw new OperationError('forbidden');
-			if (!(await ports.repository.remove(s, row._id, version(v.version)))) throw new OperationError('conflict');
+			const expectedVersion = version(v.version);
+			if (row.version !== expectedVersion) throw new OperationError('conflict');
+			const removed = ports.removeWithRelations
+				? await ports.removeWithRelations(s, row, expectedVersion)
+				: await ports.repository.remove(s, row._id, expectedVersion);
+			if (!removed) throw new OperationError('conflict');
 			return { removed: true as const };
 		}
 	};

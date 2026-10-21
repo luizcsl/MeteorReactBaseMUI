@@ -1,0 +1,51 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "relationships.v1.schema.json",
+	"title": "Bounded transactional relationship lifecycle",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["incoming", "outgoing", "maxTotal"],
+	"properties": {
+		"incoming": {
+			"type": "array",
+			"maxItems": 30,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["name", "source", "field", "policy", "maxAffected"],
+				"properties": {
+					"name": { "$ref": "#/$defs/field" },
+					"source": { "$ref": "#/$defs/module" },
+					"field": { "$ref": "#/$defs/field" },
+					"policy": { "enum": ["restrict", "cascade", "set-null"] },
+					"maxAffected": { "type": "integer", "minimum": 1, "maximum": 100 }
+				},
+				"allOf": [
+					{
+						"if": { "properties": { "field": { "const": "parentId" } } },
+						"then": { "properties": { "policy": { "enum": ["restrict", "cascade"] } } }
+					}
+				]
+			}
+		},
+		"outgoing": {
+			"type": "array",
+			"maxItems": 31,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["field", "target"],
+				"properties": { "field": { "$ref": "#/$defs/field" }, "target": { "$ref": "#/$defs/module" } }
+			}
+		},
+		"maxTotal": { "type": "integer", "minimum": 1, "maximum": 500 }
+	},
+	"$defs": {
+		"module": { "type": "string", "pattern": "^[a-z][a-z0-9]{2,31}$" },
+		"field": {
+			"type": "string",
+			"pattern": "^[a-z][A-Za-z0-9]{0,39}$",
+			"not": { "enum": ["constructor", "prototype", "__proto__", "ownerId", "tenantId", "version", "state", "deleted"] }
+		}
+	}
+}

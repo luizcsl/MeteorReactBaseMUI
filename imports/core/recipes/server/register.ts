@@ -15,7 +15,8 @@ export function registerRecipe(raw: RecipeDefinition, ports: Omit<RecipePorts, '
 	if (registered.has(definition.name)) throw new Error('Duplicate recipe registration');
 	if (ports.observeIdentity && definition.profile === 'master-detail' && !ports.observeDependencies)
 		throw new Error('Reactive master/detail requires a parent dependency observer');
-	const repository = mongoRecipeRepository(`recipe_${definition.name}`);
+	const baseRepository = mongoRecipeRepository(`recipe_${definition.name}`);
+	const repository = ports.configureRepository ? ports.configureRepository(baseRepository) : baseRepository;
 	const servicePorts: RecipePorts = { ...ports, repository };
 	const service = recipeService(definition, servicePorts);
 	for (const operation of ['list', 'create', 'update', 'transition', 'remove'] as const) {
@@ -36,14 +37,22 @@ export function registerRecipe(raw: RecipeDefinition, ports: Omit<RecipePorts, '
 		DDPRateLimiter.addRule({ type: 'method', name, userId: (value: string | null) => !!value }, 120, 60_000);
 	}
 	if (ports.observeIdentity) {
-		registerPublications({ [`${definition.name}.records`]: function (...args: unknown[]) {
-			if (args.length !== 1) throw new Meteor.Error('invalid-input');
-			return startRecipePublication(this, `recipe_view_${definition.name}`, service, args[0], {
-				observeIdentity: ports.observeIdentity!, observeRecords: repository.observeChanges!, observeDependencies: ports.observeDependencies,
-				error: () => new Meteor.Error('forbidden', 'Subscription no longer authorized')
-			});
-		} });
-		DDPRateLimiter.addRule({ type: 'subscription', name: `${definition.name}.records`, connectionId: () => true }, 30, 60_000);
+		registerPublications({
+			[`${definition.name}.records`]: function (...args: unknown[]) {
+				if (args.length !== 1) throw new Meteor.Error('invalid-input');
+				return startRecipePublication(this, `recipe_view_${definition.name}`, service, args[0], {
+					observeIdentity: ports.observeIdentity!,
+					observeRecords: repository.observeChanges!,
+					observeDependencies: ports.observeDependencies,
+					error: () => new Meteor.Error('forbidden', 'Subscription no longer authorized')
+				});
+			}
+		});
+		DDPRateLimiter.addRule(
+			{ type: 'subscription', name: `${definition.name}.records`, connectionId: () => true },
+			30,
+			60_000
+		);
 	}
 	registered.add(definition.name);
 	return servicePorts;

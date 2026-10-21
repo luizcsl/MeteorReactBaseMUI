@@ -9,11 +9,17 @@ const rows = [
 		'project-profile',
 		'project',
 		'P0',
-		'Compose owner-app or tenant-app features in an existing boilerplate; no package/auth installation'
+		'Create reviewed local boilerplate project or compose owner/tenant features; no install/auth defaults'
 	],
 	[2, 'owner-crud', 'feature', 'P0', 'Owner policy only; explicit permissions'],
 	[3, 'tenant-crud', 'feature', 'P0', 'Trusted reviewed membership ports required'],
-	[4, 'master-detail', 'feature', 'P1', 'Scoped parentExists; transactional cascading lifecycle requires design'],
+	[
+		4,
+		'master-detail',
+		'feature',
+		'P1',
+		'Scoped parent links plus bounded restrict/cascade policies on the approved Mongo transaction adapter'
+	],
 	[5, 'approval', 'feature', 'P0', 'Explicit states, transitions and reviewer roles'],
 	[6, 'domain-contracts', 'feature', 'P0', 'Bounded string/integer/boolean/enum/date/money/reference'],
 	[7, 'cross-field-rules', 'feature', 'P0', 'lte rule only; unknown expressions rejected'],
@@ -22,7 +28,7 @@ const rows = [
 		'business-workflow',
 		'feature',
 		'P1',
-		'Explicit finite state transitions; timers and arbitrary conditions require design'
+		'Typed AND conditions and server-clock deadlines on explicit transitions; no implicit timer scheduler'
 	],
 	[9, 'typed-ddp-methods', 'feature', 'P0', 'Consolidated registerMethods/callMethod; strict DTO and projection'],
 	[
@@ -39,7 +45,7 @@ const rows = [
 		'relationships',
 		'feature',
 		'P1',
-		'Scoped references and parent ports; cross-collection transactions require design'
+		'Scoped reference validation plus restrict/cascade/set-null through the approved fenced Mongo transaction adapter'
 	],
 	[14, 'private-attachments', 'services', 'P2', 'Explicit private storage and authorization ports'],
 	[15, 'import-export', 'services', 'P2', 'Bounded CSV; XLSX requires separate approved adapter'],
@@ -144,7 +150,7 @@ export function catalog(input = {}) {
 			version: '1.0.0',
 			executor,
 			priority,
-			status: [1, 4, 8, 13].includes(id) ? 'partial' : 'supported',
+			status: 'supported',
 			integration: ['services'].includes(executor) ? 'requires-approved-adapters' : 'explicit-composition',
 			limits,
 			inputSchema:
@@ -184,6 +190,59 @@ export function catalog(input = {}) {
 			productionMigrations: 'never executed'
 		},
 		example: JSON.parse(fs.readFileSync(path.join(root, 'tools/automation/examples/owner-feature.json'), 'utf8'))
+	};
+	const project = result.capabilities.find((c) => c.id === '01');
+	project.entrypoint = 'node tools/automation/adapters/project-cli.mjs';
+	project.inputSchema = 'tools/automation/contracts/project.v1.schema.json';
+	project.example = { source: 'boilerplate', destination: 'new-project', name: 'new-project' };
+	project.integration = 'separate-supervisor-reviewed-workflow';
+	project.allowedWrites = ['<new-destination>/**'];
+	project.preconditions = [
+		'Explicit workspace and approved tracked local Meteor boilerplate',
+		'Nonexistent destination; exact reviewed plan hash',
+		'No installation, credentials, deployment or security configuration'
+	];
+	for (const id of ['04', '13'])
+		result.capabilities.find((c) => c.id === id).integration = 'reviewed-fenced-mongo-transaction-registry';
+
+	const policyExample = {
+		schemaVersion: 3,
+		intent: 'create-feature',
+		name: 'workflowitems',
+		archetype: 'owner',
+		fields: [{ name: 'count', label: 'Count', type: 'integer', required: true, min: 0, max: 100 }],
+		states: ['draft', 'ready'],
+		transitions: [{ from: 'draft', to: 'ready', roles: ['owner'] }],
+		permissions: { read: ['owner'], write: ['owner'] },
+		workflow: {
+			transitions: [
+				{
+					from: 'draft',
+					to: 'ready',
+					conditions: [{ field: 'count', op: 'gte', value: 1 }],
+					deadline: { anchor: 'updatedAt', afterMs: 60000, mode: 'after' }
+				}
+			]
+		}
+	};
+	result.capabilities.find((c) => c.id === '08').example = policyExample;
+	result.capabilities.find((c) => c.id === '04').example = {
+		schemaVersion: 3,
+		intent: 'create-feature',
+		name: 'detailitems',
+		archetype: 'master-detail',
+		fields: [{ name: 'title', label: 'Title', type: 'string', required: true, maxLength: 100 }],
+		permissions: { read: ['owner'], write: ['owner'] },
+		relationships: { incoming: [], outgoing: [{ field: 'parentId', target: 'parentitems' }], maxTotal: 100 }
+	};
+	result.capabilities.find((c) => c.id === '13').example = {
+		schemaVersion: 3,
+		intent: 'create-feature',
+		name: 'linkeditems',
+		archetype: 'owner',
+		fields: [{ name: 'parent', label: 'Parent', type: 'reference', required: false, target: 'parentitems' }],
+		permissions: { read: ['owner'], write: ['owner'] },
+		relationships: { incoming: [], outgoing: [{ field: 'parent', target: 'parentitems' }], maxTotal: 100 }
 	};
 	const dependency = result.capabilities.find((c) => c.id === '52');
 	dependency.entrypoint = 'node tools/automation/adapters/dependencies-cli.mjs';

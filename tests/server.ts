@@ -5,6 +5,7 @@ import '../imports/modules/tasks/tests/policy.test';
 
 if (process.env.TEST_TRANSACTIONS === '1') {
 	require('./transactions.server');
+	require('./automation-relationships.server');
 } else {
 	console.info('Transaction port: NOT QUALIFIED in this run. Use npm run test:transactions against a replica set.');
 }

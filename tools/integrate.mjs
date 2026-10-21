@@ -49,7 +49,11 @@ function moduleInfo(root, name) {
 	const relative = `imports/modules/${name}`;
 	const manifest = readMetadata(root, relative + '/module.manifest.json');
 	let generated;
-	let kind, page, services;
+	let kind,
+		page,
+		services,
+		workflow = false,
+		relationships = false;
 	if (manifest.templateVersion === '2.0.0') {
 		const definition = validateDefinition(readMetadata(root, relative + '/module.definition.json'));
 		if (definition.name !== name || manifest.definitionHash !== hash(json(definition)))
@@ -129,6 +133,17 @@ function moduleInfo(root, name) {
 			if (fs.readFileSync(confined(root, file), 'utf8') !== content)
 				fail('integration-extension', 'Extension differs from deterministic generator', file);
 		if (definition.profile !== 'master-detail') page = extension.page;
+		workflow = Boolean(extension.feature.workflow);
+		relationships = Boolean(extension.feature.relationships);
+		if (
+			relationships &&
+			!fs.existsSync(confined(root, `${relative}/custom/server/relationshipPorts.ts`, { missing: true }))
+		)
+			fail(
+				'needs-review',
+				'Supply reviewed relationshipPorts.ts using the transactional registry',
+				`${relative}/custom/server/relationshipPorts.ts`
+			);
 		if (Object.hasOwn(extension.files, 'generated/services/registration.json')) {
 			services = readMetadata(root, `${relative}/generated/services/registration.json`);
 			if (services.requiredAdapters.length) confined(root, `${relative}/custom/server/servicePorts.ts`);
@@ -141,6 +156,8 @@ function moduleInfo(root, name) {
 		name,
 		kind,
 		services,
+		workflow,
+		relationships,
 		page: page ?? (kind === 'recipe' ? 'generated/Page' : `ui/${name[0].toUpperCase() + name.slice(1)}Page`),
 		upper: name[0].toUpperCase() + name.slice(1),
 		hashes: snapshot(root, relative)
@@ -153,6 +170,12 @@ export function renderIntegration(root, entries) {
 		.map(
 			(m, i) =>
 				`import { register${m.upper} } from '../../modules/${m.name}/${m.kind === 'recipe' ? 'generated/server/register' : 'server/register'}';\nimport { ${m.kind === 'recipe' ? 'ports' : 'context'} as ports${i} } from '../../modules/${m.name}/custom/server/ports';` +
+				(m.workflow
+					? `\nimport { createWorkflowPorts as workflowPorts${i} } from '../../modules/${m.name}/generated/workflow/server';`
+					: '') +
+				(m.relationships
+					? `\nimport { createRelationshipPorts as relationshipPorts${i} } from '../../modules/${m.name}/generated/relationships/server';\nimport { relationshipAdapter as relationshipAdapter${i} } from '../../modules/${m.name}/custom/server/relationshipPorts';`
+					: '') +
 				(m.services
 					? `\nimport { registerServices as registerServices${i} } from '../../modules/${m.name}/generated/services/server/register';` +
 						(m.services.requiredAdapters.length
@@ -168,7 +191,16 @@ export function renderIntegration(root, entries) {
 			`import type { IRoute, IAppMenu } from '../modules/modulesTypings';\n${routes}\nexport const integratedRoutes: IRoute[] = [${info.map((m, i) => `{path:'/modules/${m.name}',component:Page${i},isProtected:true,authenticatedOnly:true}`).join(',')}];\nexport const integratedMenu: IAppMenu[] = ${JSON.stringify(info.map((m) => ({ path: `/modules/${m.name}`, name: m.label, isProtected: true })))};\n`,
 		'server/register.ts':
 			header +
-			`${server}\nexport function registerIntegratedModules(): void {\n${info.map((m, i) => (m.services ? `const servicePorts${i}=register${m.upper}(ports${i});\nregisterServices${i}(servicePorts${i}${m.services.requiredAdapters.length ? ', serviceAdapters' + i : ''});` : `register${m.upper}(ports${i});`)).join('\n')}\n}\n`,
+			`${server}\nexport function registerIntegratedModules(): void {\n${info
+				.map((m, i) => {
+					let ports = `ports${i}`;
+					if (m.workflow) ports = `workflowPorts${i}(${ports})`;
+					if (m.relationships) ports = `relationshipPorts${i}(${ports}, relationshipAdapter${i})`;
+					return m.services
+						? `const servicePorts${i}=register${m.upper}(${ports});\nregisterServices${i}(servicePorts${i}${m.services.requiredAdapters.length ? ', serviceAdapters' + i : ''});`
+						: `register${m.upper}(${ports});`;
+				})
+				.join('\n')}\n}\n`,
 		'server/tests.ts':
 			header +
 			info

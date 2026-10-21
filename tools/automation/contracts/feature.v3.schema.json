@@ -103,6 +103,12 @@
 		},
 		"integration": {
 			"$ref": "#/$defs/integration"
+		},
+		"workflow": {
+			"$ref": "workflow.v1.schema.json"
+		},
+		"relationships": {
+			"$ref": "relationships.v1.schema.json"
 		}
 	},
 	"$schema": "https://json-schema.org/draft/2020-12/schema",

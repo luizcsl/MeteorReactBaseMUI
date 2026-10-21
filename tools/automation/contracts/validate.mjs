@@ -1,5 +1,7 @@
 import { fail, exact, relative } from '../../lib.mjs';
 import { validateDefinition } from '../../recipes.mjs';
+import { validateWorkflow } from '../generators/workflow.mjs';
+import { validateRelationships } from '../generators/relationships.mjs';
 export const json = (value) => JSON.stringify(value, null, 2) + '\n';
 export function boundedString(value, label, max = 100) {
 	if (typeof value !== 'string' || !value.trim() || value.length > max) fail('automation-schema', `Invalid ${label}`);
@@ -21,11 +23,23 @@ export function validateFeature(raw) {
 			'permissions',
 			'ui',
 			'services',
+			'workflow',
+			'relationships',
 			'integration'
 		],
 		['schemaVersion', 'intent', 'name', 'archetype', 'fields', 'permissions']
 	);
-	for (const key of ['rules', 'filters', 'states', 'transitions', 'ui', 'services', 'integration'])
+	for (const key of [
+		'rules',
+		'filters',
+		'states',
+		'transitions',
+		'ui',
+		'services',
+		'integration',
+		'workflow',
+		'relationships'
+	])
 		if (Object.hasOwn(raw, key) && raw[key] === null) fail('automation-schema', `Null is not supported for ${key}`);
 	if (raw.schemaVersion !== 3 || raw.intent !== 'create-feature')
 		fail('automation-version', 'Use schemaVersion 3 and intent create-feature');
@@ -40,6 +54,8 @@ export function validateFeature(raw) {
 		transitions: raw.transitions ?? [],
 		permissions: raw.permissions
 	});
+	if (raw.workflow !== undefined) validateWorkflow(raw.workflow, definition);
+	if (raw.relationships !== undefined) validateRelationships(raw.relationships, definition);
 	if (raw.integration !== undefined) {
 		exact(raw.integration, ['label', 'identity', 'ports'], ['label', 'identity']);
 		boundedString(raw.integration.label, 'label');

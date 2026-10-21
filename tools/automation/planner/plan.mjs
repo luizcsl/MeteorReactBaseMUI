@@ -98,7 +98,8 @@ export async function planAutomation(root, raw) {
 			const start = snapshot(stage);
 			if (operation.kind === 'feature') {
 				await feature(stage, operation.input, diagnostics);
-				if (operation.input.integration) reviews.add('security');
+				if (operation.input.integration || operation.input.workflow || operation.input.relationships)
+					reviews.add('security');
 			}
 			if (operation.kind === 'project') {
 				exact(operation.input, ['profile', 'features']);
@@ -113,7 +114,7 @@ export async function planAutomation(root, raw) {
 					if (operation.input.profile === 'owner-app' && input.archetype !== 'owner')
 						fail('automation-project', 'owner-app accepts owner features only');
 					await feature(stage, input, diagnostics);
-					if (input.integration) reviews.add('security');
+					if (input.integration || input.workflow || input.relationships) reviews.add('security');
 				}
 			}
 			if (operation.kind === 'evolve') {

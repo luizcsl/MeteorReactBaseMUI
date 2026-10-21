@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "New local boilerplate project v1",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["source", "destination", "name"],
+	"properties": {
+		"source": {
+			"type": "string",
+			"minLength": 1,
+			"description": "Dot or safe path inside explicit workspace, containing approved tracked boilerplate"
+		},
+		"destination": {
+			"type": "string",
+			"minLength": 1,
+			"description": "New nonexistent directory inside explicit workspace, never overlapping source"
+		},
+		"name": {
+			"type": "string",
+			"pattern": "^[a-z][a-z0-9-]{1,62}$"
+		}
+	}
+}

@@ -1,3 +1,5 @@
+import { renderWorkflow } from './workflow.mjs';
+import { renderRelationships } from './relationships.mjs';
 import { renderUI } from './ui.mjs';
 import { renderTests } from './tests.mjs';
 import { renderServices } from './services.mjs';
@@ -14,6 +16,8 @@ export function renderExtensions(definition, raw, root) {
 	};
 	output[`${prefix}/automation/REFERENCE.md`] =
 		`# ${definition.name}\n\nGenerated from the versioned definition. Never an acceptance certificate.\n\n## Fields\n${definition.fields.map((f) => '- ' + f.name + ': ' + f.type + (f.required ? ' (required)' : '')).join('\n')}\n\n## Permission matrix\n${json(definition.permissions)}\n## Workflow\n${definition.transitions.map((t) => t.from + ' --> ' + t.to + ' : ' + t.roles.join(', ')).join('\n')}\n\n## Methods\nlist, create, update, transition, remove use shared registerMethods and callMethod. Reactive reads use registerPublications and require identity observation.\n`;
+	if (spec.workflow) Object.assign(output, renderWorkflow({ definition, workflow: spec.workflow }));
+	if (spec.relationships) Object.assign(output, renderRelationships({ definition, relationships: spec.relationships }));
 	if (spec.services) Object.assign(output, renderServices({ definition, services: spec.services }, root));
 	output[`${prefix}/module.automation.json`] = json({
 		schemaVersion: 1,

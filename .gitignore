@@ -19,3 +19,4 @@ jatai-web/
 
 .dependency-review.lock
 .dependency-review-stage-*/
+.project-scaffold.lock

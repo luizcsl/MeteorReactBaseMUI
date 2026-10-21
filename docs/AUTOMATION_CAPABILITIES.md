@@ -1,22 +1,22 @@
 # Automation traceability: 55 capabilities
 
-Generated from the machine catalog. Supported means the documented bounded variant is implemented, not unrestricted business behavior. Partial entries explicitly retain design work. Provider-backed services require reviewed adapters; test evidence is separate from capability availability.
+Generated from the machine catalog. Supported means the documented bounded variant is implemented, not unrestricted business behavior. Unsupported variants still require design and fail closed. Provider-backed services require reviewed adapters; test evidence is separate from capability availability.
 
 | ID  | Capability                | Stage | Status    | Mechanism and limit                                                                                                                          |
 | --- | ------------------------- | ----- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01  | project-profile           | P0    | partial   | project: Compose owner-app or tenant-app features in an existing boilerplate; no package/auth installation                                   |
+| 01  | project-profile           | P0    | supported | project: Create reviewed local boilerplate project or compose owner/tenant features; no install/auth defaults                                |
 | 02  | owner-crud                | P0    | supported | feature: Owner policy only; explicit permissions                                                                                             |
 | 03  | tenant-crud               | P0    | supported | feature: Trusted reviewed membership ports required                                                                                          |
-| 04  | master-detail             | P1    | partial   | feature: Scoped parentExists; transactional cascading lifecycle requires design                                                              |
+| 04  | master-detail             | P1    | supported | feature: Scoped parent links plus bounded restrict/cascade policies on the approved Mongo transaction adapter                                |
 | 05  | approval                  | P0    | supported | feature: Explicit states, transitions and reviewer roles                                                                                     |
 | 06  | domain-contracts          | P0    | supported | feature: Bounded string/integer/boolean/enum/date/money/reference                                                                            |
 | 07  | cross-field-rules         | P0    | supported | feature: lte rule only; unknown expressions rejected                                                                                         |
-| 08  | business-workflow         | P1    | partial   | feature: Explicit finite state transitions; timers and arbitrary conditions require design                                                   |
+| 08  | business-workflow         | P1    | supported | feature: Typed AND conditions and server-clock deadlines on explicit transitions; no implicit timer scheduler                                |
 | 09  | typed-ddp-methods         | P0    | supported | feature: Consolidated registerMethods/callMethod; strict DTO and projection                                                                  |
 | 10  | reactive-publications     | P1    | supported | feature: Trusted identity observation and bounded scoped projections required                                                                |
 | 11  | rbac-abac                 | P0    | supported | feature: owner/member/reviewer matrix; arbitrary ABAC expressions unsupported                                                                |
 | 12  | identity-adapters         | P0    | supported | feature: Server-owned active account and membership sources, never DTO roles                                                                 |
-| 13  | relationships             | P1    | partial   | feature: Scoped references and parent ports; cross-collection transactions require design                                                    |
+| 13  | relationships             | P1    | supported | feature: Scoped reference validation plus restrict/cascade/set-null through the approved fenced Mongo transaction adapter                    |
 | 14  | private-attachments       | P2    | supported | services: Explicit private storage and authorization ports                                                                                   |
 | 15  | import-export             | P2    | supported | services: Bounded CSV; XLSX requires separate approved adapter                                                                               |
 | 16  | notifications             | P2    | supported | services: Explicit event/recipient/provider ports; no guessed recipients                                                                     |

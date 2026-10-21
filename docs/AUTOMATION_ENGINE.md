@@ -43,7 +43,7 @@ Use `project` to compose up to ten owner-app/tenant-app feature contracts inside
 
 The all-services example and [service guide](AUTOMATION_SERVICES.md) cover private attachments, CSV import/export, notifications, durable leased jobs, scoped cursor search/index plans, audit/history, bounded OpenAPI clients/mocks, aggregate reports and dependency update review plans. Generators emit strict typed service DTOs, shared registerMethods registration, callMethod clients and a connected report dashboard. Integration reuses the exact recipe repository and wires service registration; non-builtin storage/provider adapters remain explicit reviewed ports. Generating them does not claim an email provider, external service or production queue has been configured.
 
-Unsupported XLSX, arbitrary OpenAPI schemas, implicit cross-collection transactions, unrestricted ABAC, workflow expressions and complete legacy rewrites fail closed or remain explicit design work. The catalog reports supported versus partial explicitly, together with adapter requirements and remaining limits. The 55 entries are traceable mechanisms, not a claim that every possible variant of all 55 topics is automated.
+Unsupported XLSX, arbitrary OpenAPI schemas, cross-store transactions, unrestricted ABAC, arbitrary workflow expressions and complete legacy rewrites fail closed or remain explicit design work. The catalog reports bounded support explicitly, together with adapter requirements and remaining limits. The 55 entries are traceable mechanisms, not a claim that every possible variant of all 55 topics is automated.
 
 ## Transaction safety and recovery
 
@@ -66,3 +66,11 @@ This deliberately does not grant the six ordinary tools permission to edit packa
 3. `node tools/automation/adapters/dependencies-cli.mjs apply dependency-plan.json review.json` checks hashes, semantics, current bytes and concurrent edits, then updates only the two reviewed files. It does not install packages or execute scripts. Requalify separately after an authorized installation.
 
 Existing safe registry-only overrides remain unchanged. New packages, nonregistry dependencies, arbitrary npm flags and scripts are rejected. A process crash or rollback conflict retains the lock/backups for supervised recovery; do not remove a live writer's lock. This workflow is not an atomic two-file database transaction. The approval file records a supervisor decision; it is not an authentication mechanism.
+
+## Additional standard policy variants
+
+A new project can be created from an approved tracked local copy using the separate project CLI. Its plan includes complete bytes/hashes, excludes known private-configuration paths and local caches (exact content still requires review), and only applies into a nonexistent destination under the explicitly selected workspace. It does not install packages, create credentials or deploy. See [project creation](AUTOMATION_PROJECT.md).
+
+Feature contracts may include `workflow` typed conditions and trusted server-clock deadlines, enforced before registered transitions. They do not execute arbitrary expressions or schedule automatic transitions. See [workflow contracts](AUTOMATION_WORKFLOWS.md).
+
+Feature `relationships` declares scoped incoming/outgoing links and bounded restrict, cascade or nullable-reference policies. Integration requires an explicit registry using the supplied Mongo transaction adapter; every participating write uses the shared scope fence. Standalone Mongo without transaction support is rejected, not downgraded to a racy precheck. See [relationship lifecycle](AUTOMATION_RELATIONSHIPS.md). Raw writes outside the adapter are outside the invariant and must not be used for participating collections.
