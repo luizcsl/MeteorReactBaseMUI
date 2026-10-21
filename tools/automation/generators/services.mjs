@@ -260,8 +260,16 @@ export function validateServices(input, definition) {
 				error('invalid package');
 			if (names.has(u.name)) error('duplicate dependency');
 			names.add(u.name);
-			if(typeof u.from !== 'string' || !u.from.length || u.from.length>160 || !/[0-9*xX]/.test(u.from) || !/^[0-9A-Za-z*~^<>=|.+ -]+$/.test(u.from))error('current registry dependency declaration required');
-			if(typeof u.to !== 'string' || !/^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(u.to))error('exact dependency target version required');
+			if (
+				typeof u.from !== 'string' ||
+				!u.from.length ||
+				u.from.length > 160 ||
+				!/[0-9*xX]/.test(u.from) ||
+				!/^[0-9A-Za-z*~^<>=|.+ -]+$/.test(u.from)
+			)
+				error('current registry dependency declaration required');
+			if (typeof u.to !== 'string' || !/^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(u.to))
+				error('exact dependency target version required');
 			if (u.from === u.to) error('dependency versions identical');
 		}
 	}

@@ -16,3 +16,6 @@ jatai-web/
 .generated-staging/
 
 .agent-state/
+
+.dependency-review.lock
+.dependency-review-stage-*/

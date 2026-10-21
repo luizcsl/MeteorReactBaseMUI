@@ -55,7 +55,7 @@ Generated from the machine catalog. Supported means the documented bounded varia
 | 49  | mutation-tests            | P0    | supported | verify: Existing protected mutation runner remains mandatory                                                                                 |
 | 50  | impact-tests              | P1    | supported | inspect: AST reverse dependency closure; full gates remain mandatory                                                                         |
 | 51  | synchronized-docs         | P0    | supported | feature: Generated domain/permission/state diagram reference                                                                                 |
-| 52  | dependency-updates        | P2    | partial   | services: Reviewable dependency update plan; no automatic installation                                                                       |
+| 52  | dependency-updates        | P2    | supported | dependencies: Separate exact-hash reviewed package/lock apply; no installation or scripts                                                    |
 | 53  | minimal-context           | P0    | supported | inspect: Bounded AST context and dependency graph                                                                                            |
 | 54  | architecture-impact       | P0    | supported | inspect: AST graph plus mandatory boundaries gate                                                                                            |
 | 55  | composed-orchestration    | P0    | supported | plan/apply: Sequential deterministic DAG, stale/tamper rejection and recovery                                                                |

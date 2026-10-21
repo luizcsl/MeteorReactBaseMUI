@@ -103,7 +103,13 @@ const rows = [
 	[49, 'mutation-tests', 'verify', 'P0', 'Existing protected mutation runner remains mandatory'],
 	[50, 'impact-tests', 'inspect', 'P1', 'AST reverse dependency closure; full gates remain mandatory'],
 	[51, 'synchronized-docs', 'feature', 'P0', 'Generated domain/permission/state diagram reference'],
-	[52, 'dependency-updates', 'services', 'P2', 'Reviewable dependency update plan; no automatic installation'],
+	[
+		52,
+		'dependency-updates',
+		'dependencies',
+		'P2',
+		'Separate exact-hash reviewed package/lock apply; no installation or scripts'
+	],
 	[53, 'minimal-context', 'inspect', 'P0', 'Bounded AST context and dependency graph'],
 	[54, 'architecture-impact', 'inspect', 'P0', 'AST graph plus mandatory boundaries gate'],
 	[
@@ -138,26 +144,32 @@ export function catalog(input = {}) {
 			version: '1.0.0',
 			executor,
 			priority,
-			status: [1, 4, 8, 13, 52].includes(id) ? 'partial' : 'supported',
+			status: [1, 4, 8, 13].includes(id) ? 'partial' : 'supported',
 			integration: ['services'].includes(executor) ? 'requires-approved-adapters' : 'explicit-composition',
 			limits,
 			inputSchema:
-				executor === 'ui'
-					? 'tools/automation/contracts/ui.v1.schema.json'
-					: executor === 'services'
-						? 'tools/automation/contracts/services.v1.schema.json'
-						: executor === 'codemod'
-							? 'tools/automation/codemods/operation.schema.json'
-							: executor === 'feature'
-								? 'tools/automation/contracts/feature.v3.schema.json'
-								: 'tools/automation/contracts/operation.v1.schema.json',
+				executor === 'dependencies'
+					? 'tools/automation/contracts/dependencies.v1.schema.json'
+					: executor === 'ui'
+						? 'tools/automation/contracts/ui.v1.schema.json'
+						: executor === 'services'
+							? 'tools/automation/contracts/services.v1.schema.json'
+							: executor === 'codemod'
+								? 'tools/automation/codemods/operation.schema.json'
+								: executor === 'feature'
+									? 'tools/automation/contracts/feature.v3.schema.json'
+									: 'tools/automation/contracts/operation.v1.schema.json',
 			preconditions: [
 				'Validated explicit business policy',
 				'Unmodified generated manifests',
 				'Trusted server adapters for identity and external effects'
 			],
 			allowedWrites:
-				executor === 'verify' || executor === 'inspect' ? [] : ['imports/modules/<module>/', 'imports/integration/'],
+				executor === 'dependencies'
+					? ['package.json', 'package-lock.json']
+					: executor === 'verify' || executor === 'inspect'
+						? []
+						: ['imports/modules/<module>/', 'imports/integration/'],
 			requiredTests: [
 				'test:automation',
 				'test:core',
@@ -173,6 +185,15 @@ export function catalog(input = {}) {
 		},
 		example: JSON.parse(fs.readFileSync(path.join(root, 'tools/automation/examples/owner-feature.json'), 'utf8'))
 	};
+	const dependency = result.capabilities.find((c) => c.id === '52');
+	dependency.entrypoint = 'node tools/automation/adapters/dependencies-cli.mjs';
+	dependency.integration = 'separate-supervisor-reviewed-workflow';
+	dependency.example = { updates: [{ name: 'meteor-node-stubs', from: '1.2.22', to: '1.2.23' }] };
+	dependency.preconditions = [
+		'Existing registry-only dependency and lockfile v3',
+		'Exact reviewed plan hash; current source bytes unchanged',
+		'Separate workflow, never ordinary toolkit.apply'
+	];
 	if (input.capability) result.capabilities = result.capabilities.filter((c) => c.id === input.capability);
 	if (input.schemas) {
 		const schemas = {};

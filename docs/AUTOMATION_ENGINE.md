@@ -56,3 +56,13 @@ An unresolved journal blocks future work. After independently confirming the wri
 ## Evidence and limits
 
 Run `npm run test:automation` for independent generator/runtime/codemod/transaction cases. `npm run verify` retains the existing complete gate chain, including real security acceptance. Actual Meteor, Mongo and browser evidence must be recorded separately from Node/typecheck results. No measured small-model productivity claim is made; use the existing protected benchmark harness to compare conventional, context-guided and automation-assisted tasks under the same acceptance conditions.
+
+## Separate dependency review workflow (52)
+
+This deliberately does not grant the six ordinary tools permission to edit package manifests. Discover its request schema and entrypoint with `toolkit.catalog` input `{"capability":"52","schemas":true}`. The example versions illustrate syntax, not a recommendation or an assertion that a release exists.
+
+1. `node tools/automation/adapters/dependencies-cli.mjs plan updates.json > dependency-plan.json` resolves only existing registry dependencies in an isolated temporary directory, using fixed npm arguments and scripts disabled. `from` must exactly match the current declaration (including `^`/`~`); `to` is an exact version. No project files or installed packages change during planning.
+2. Independently review every package/lock diff, source, compatibility and security implication. Supply `review.json` containing only `{"approvedPlanHash":"<exact plan hash>"}`.
+3. `node tools/automation/adapters/dependencies-cli.mjs apply dependency-plan.json review.json` checks hashes, semantics, current bytes and concurrent edits, then updates only the two reviewed files. It does not install packages or execute scripts. Requalify separately after an authorized installation.
+
+Existing safe registry-only overrides remain unchanged. New packages, nonregistry dependencies, arbitrary npm flags and scripts are rejected. A process crash or rollback conflict retains the lock/backups for supervised recovery; do not remove a live writer's lock. This workflow is not an atomic two-file database transaction. The approval file records a supervisor decision; it is not an authentication mechanism.
