@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { IDefaultContainerProps } from '../../typings/BoilerplateDefaultTypings';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from '/imports/libs/router';
 import UserProfileListController from '../../modules/userprofile/pages/UserProfileList/userProfileListController';
 import UserProfileDetailController from './pages/UserProfileDetail/userProfileDetailController';
 import AuthContext, { IAuthContext } from '/imports/app/authProvider/authContext';

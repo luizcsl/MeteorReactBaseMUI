@@ -31,4 +31,4 @@ The dedicated `npm run test:browser` uses `cypress.ai-ready.config.ts` and `.cyp
 
 The separate cloud-browser route was also attempted and returned an explicit browser security-policy denial for local page authority; it was stopped rather than bypassed. Only a passing browser CI job can close this qualification gap.
 
-Meteor 3.5.2: TypeScript, core9/9 and real DDP/Mongo/HTTP33/33 passed. Production minification initially exited137 without an application compile diagnostic; final sequential build qualification is recorded in AI_READY_VALIDATION.md.
+Meteor 3.5.2: TypeScript, core9/9 and real DDP/Mongo/HTTP33/33 passed. Production minification initially exited137 without an application compile diagnostic; the sequential full3.5.2 production build subsequently passed(exit0), after relocating temporary toolchain storage out of RAM-backed /tmp. Full evidence is in AI_READY_VALIDATION.md.

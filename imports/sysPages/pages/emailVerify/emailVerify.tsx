@@ -1,6 +1,6 @@
 import React from 'react';
 import { Accounts } from 'meteor/accounts-base';
-import { useParams } from 'react-router';
+import { useParams } from '/imports/libs/router';
 import { IDefaultContainerProps } from '/imports/typings/BoilerplateDefaultTypings';
 
 let emailVerified = false;

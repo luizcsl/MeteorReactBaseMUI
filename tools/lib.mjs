@@ -47,7 +47,11 @@ export function validateSpec(spec) {
   if (typeof spec.name !== 'string' || !/^[a-z][a-z0-9]{2,31}$/.test(spec.name) || ['tasks','core','index','server','client','test','tests','constructor','prototype','__proto__'].includes(spec.name)) fail('module-name', 'Use a unique lowercase alphanumeric module name (3–32 characters)');
   return spec;
 }
-export const protectedPath = value => /^(?:tools|evals|templates|tests|\.github|\.git|\.agent-state)(?:\/|$)/.test(value) || /(?:^|\/)(?:AGENTS\.md|package(?:-lock)?\.json|tsconfig\.json)$/.test(value) || /(?:^|\/)[^/]*\.(?:test|spec)\.[^/]+$/.test(value);
+// Task scopes cannot authorize changes to their own evaluator or runtime/build gates.
+// Platform/configuration edits require a separately reviewed supervisor workflow.
+export const protectedPath = value => value === 'imports/libs/router.ts' || /^(?:tools|evals|templates|tests|cypress|\.cypress|\.meteor|\.github|\.git|\.agent-state|\.babel-plugins)(?:\/|$)/.test(value)
+  || /(?:^|\/)(?:AGENTS\.md|\.babelrc(?:\.[^/]+)?|babel\.config\.[^/]+|\.meteorignore|\.npmrc|\.gitignore|\.nvmrc|\.node-version|package(?:-lock)?\.json|tsconfig\.json|Dockerfile(?:\.[^/]+)?|docker-compose(?:[.-][^/]+)?\.ya?ml|cypress[^/]*\.config\.[^/]+)$/.test(value)
+  || /(?:^|\/)[^/]*\.(?:test|spec)\.[^/]+$/.test(value);
 export function validateTask(task) {
   exact(task, ['schemaVersion','id','objective','acceptance','allowedPaths','contextFiles','commands','budget','state']);
   if (task.schemaVersion !== 1 || !/^[a-z][a-z0-9-]{2,63}$/.test(task.id)) fail('task-schema', 'Invalid task version or id');

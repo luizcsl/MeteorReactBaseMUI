@@ -4,7 +4,7 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { SysFab } from '/imports/ui/components/sysFab/sysFab';
 import { AniversarioListControllerContext } from './aniversarioListController';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '/imports/libs/router';
 import { ComplexTable } from '/imports/ui/components/ComplexTable/ComplexTable';
 import DeleteDialog from '/imports/ui/appComponents/showDialog/custom/deleteDialog/deleteDialog';
 import AniversarioListStyles from './aniversarioListStyles';

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Routes, Route, useLocation, useParams } from 'react-router';
+import { Routes, Route, useLocation, useParams } from '/imports/libs/router';
 import { NotFound } from '/imports/sysPages/pages/notFound/notFound';
 import { getUser } from '/imports/libs/getUser';
 import { segurancaApi } from '/imports/security/api/segurancaApi';

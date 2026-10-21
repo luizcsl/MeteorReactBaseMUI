@@ -1,7 +1,7 @@
 import React from 'react';
 import AuthProvider from './authProvider/authProvider';
 import AppLayoutProvider from './appLayoutProvider/appLayoutProvider';
-import { BrowserRouter as Router } from 'react-router';
+import { BrowserRouter as Router } from '/imports/libs/router';
 import { AppRouterSwitch } from './routes/appRouterSwitch';
 
 export const App = () => {

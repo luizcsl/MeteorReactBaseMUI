@@ -1,6 +1,6 @@
 import React, { ReactNode, useCallback, useContext, useRef } from 'react';
 import Context, { ISysAppBarContext } from './sysAppBarContext';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '/imports/libs/router';
 import SysAppBarView from './sysAppBarView';
 import AuthContext from '/imports/app/authProvider/authContext';
 import AppLayoutContext from '/imports/app/appLayoutProvider/appLayoutContext';

@@ -6,11 +6,11 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { scaffold } from './scaffold.mjs';
 export function prepareRuntimeFixture(root, temporary) {
-  for(const item of ['imports','templates','.meteor','tests','client','server','public']) {
+  for(const item of ['imports','templates','.meteor','tests','client','server','public','.babel-plugins']) {
     const source=path.join(root,item);
     if(fs.existsSync(source)) fs.cpSync(source,path.join(temporary,item),{recursive:true,filter:filename=>!filename.startsWith(path.join(root,'.meteor','local'))});
   }
-  for(const item of ['package.json','package-lock.json','tsconfig.json','.meteorignore']) if(fs.existsSync(path.join(root,item))) fs.copyFileSync(path.join(root,item),path.join(temporary,item));
+  for(const item of ['package.json','package-lock.json','tsconfig.json','.meteorignore','.babelrc']) if(fs.existsSync(path.join(root,item))) fs.copyFileSync(path.join(root,item),path.join(temporary,item));
   fs.symlinkSync(path.join(root,'node_modules'),path.join(temporary,'node_modules'),'dir');
   scaffold(temporary,{schemaVersion:1,templateVersion:'1.0.0',profile:'owner-crud',name:'verificationnotes'});
   const pkg=JSON.parse(fs.readFileSync(path.join(temporary,'package.json'),'utf8'));

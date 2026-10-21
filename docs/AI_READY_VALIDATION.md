@@ -27,15 +27,15 @@ The final local and CI evidence is recorded below after execution. A failed, una
 
 - TypeScript: passed with zero errors.
 - Deterministic core: 9/9 passed, including create replay and transaction error propagation.
-- Toolkit/evaluation infrastructure: 28/28 passed, zero skipped. Includes ignored-source scope bypass regression.
+- Toolkit/evaluation infrastructure: 31/31 passed, zero skipped. Includes ignored-source scope bypass regression.
 - Templates: six generator safety/drift tests and isolated generated TypeScript/registration compilation passed.
 - Generated module runtime: 5/5 passed through registered namespace, real Mongo and real DDP (owner isolation, CAS, concurrent create replay, malformed/anonymous denial).
-- Real application server suite: 33/33 passed through Meteor 3.5 and again 3.5.2 / MongoDB 7.0.16, including negative DDP and actual HTTP media tests. The mixed-writer test stubs only audit identity lookup outside MethodInvocation, not authorization, schema or persistence. Mongo was a standalone disposable local instance; replica-set transaction rollback is not qualified.
-- Full production Meteor 3.5 build passed (exit0). On the security patch3.5.2, initial minification exited137 without application compile diagnostics; sequential requalification is pending. No unresolved async_hooks import remains.
+- Real application server suite: 33/33 passed through Meteor 3.5 and again 3.5.2 / MongoDB 7.0.16, including negative DDP and actual HTTP media tests. The mixed-writer test stubs only audit identity lookup outside MethodInvocation, not authorization, schema or persistence. The standalone suite passed33/33; a separate real replica-set run passed37/37 including4 transaction-port tests. This qualifies the optional adapter, not automatic transactions for existing CRUD repositories.
+- Full production Meteor3.5.2 build passed (exit0) after sequential execution and relocating temporary toolchain storage out of RAM-backed /tmp. Earlier interrupted exit137 attempts remain failures/incomplete evidence, not passes. No unresolved async_hooks import remains.
 - Full and production npm audit: zero known vulnerabilities after meteor-node-stubs 1.2.31 rebundle. See [dependency evidence](DEPENDENCY_SECURITY.md).
-- Browser: local execution blocked by browser launch restrictions, and the existing cloud-browser route denied local page access. No browser pass claimed. Dedicated CI workflow is executable but has not run remotely; branch publication is authorized and exact-head CI is pending.
+- Browser: local execution blocked by browser launch restrictions, and the existing cloud-browser route denied local page access. No browser pass claimed. Initial remote CI executed and exposed a transaction-test typing mismatch and React Router ESM/classic-script incompatibility. Both were corrected; the real emitted Meteor 3.5.2 modern and legacy bundles each passed syntax parsing for all 72 scripts. Exact-head browser rerun is pending; syntax parsing is not a browser pass.
 - Independent adversarial review found issues in mixed-writer revision, direct media active-profile checks, migration/version path consistency, crash lock recovery, create replay and ignored-source patch scope. Fixes and regressions were added. This is not an independent penetration-test certification.
-- Real-model benchmark, representative application pilots, Docker image scan, replica-set rollback and backup restoration: not executed. Their protocols/gates do not constitute a pass.
+- Real-model benchmark, representative application pilots, Docker image scan and backup restoration: not executed. Their protocols/gates do not constitute a pass.
 
 ## Release workflow
 

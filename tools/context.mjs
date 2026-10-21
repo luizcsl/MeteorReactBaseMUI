@@ -6,13 +6,31 @@ export function context(root, input) {
   const task = validateTask(input);
   const queue = [...new Set(task.contextFiles)].sort();
   const visited = new Set(), records = [], external = new Set();
+  let sourceBytes = 0;
   while (queue.length) {
     const file = queue.shift();
     if (visited.has(file)) continue;
     if (/(?:^|\/)(?:\.env(?:\.|$)|\.git(?:\/|$)|\.aws(?:\/|$)|credentials|secrets)(?!example)/i.test(file) || /\.(?:pem|key|p12|pfx)$/i.test(file)) fail('sensitive-context', 'Credential/configuration files cannot be included in agent context', file);
     visited.add(file);
     if (visited.size > task.budget.contextFiles) fail('context-budget', 'Dependency closure exceeds contextFiles; narrow scope or request explicit budget expansion',file);
-    const source = fs.readFileSync(confined(root,file),'utf8');
+    const target = confined(root,file);
+    const stat = fs.statSync(target);
+    if (!stat.isFile()) fail('context-file', 'Context requires regular files', file);
+    if (stat.size > task.budget.contextBytes - sourceBytes) fail('context-budget', 'Cumulative source bytes exceed contextBytes before content load', file);
+    // Bound allocation/read as well as output. A concurrent growing file cannot
+    // cause readFileSync to allocate beyond the approved budget after the stat.
+    const descriptor = fs.openSync(target, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    let source;
+    try {
+      const current = fs.fstatSync(descriptor);
+      if (!current.isFile() || current.size !== stat.size) fail('context-changed', 'Context file changed before reading', file);
+      const buffer = Buffer.alloc(stat.size + 1);
+      let loaded = 0, count;
+      while (loaded < buffer.length && (count = fs.readSync(descriptor, buffer, loaded, buffer.length - loaded, loaded)) > 0) loaded += count;
+      if (loaded !== stat.size) fail('context-changed', 'Context file changed while reading', file);
+      sourceBytes += loaded;
+      source = buffer.subarray(0, loaded).toString('utf8');
+    } finally { fs.closeSync(descriptor); }
     const dependencies = [];
     for (const match of source.matchAll(/(?:\bfrom\s*|\bimport\s*\(|\brequire\s*\(|\bimport\s*)['"]([^'"]+)['"]/g)) {
       const specifier = match[1];
@@ -32,7 +50,7 @@ export function context(root, input) {
   }
   records.sort((a,b)=>a.file.localeCompare(b.file,'en'));
   const result = { schemaVersion:1, task, algorithm:'sorted lexical import closure v1; dynamic computed imports require explicit contextFiles', externalDependencies:[...external].sort(), files:records };
-  const bytes = Buffer.byteLength(JSON.stringify(result));
+  const bytes = Buffer.byteLength(JSON.stringify(result, null, 2) + '\n');
   if (bytes > task.budget.contextBytes) fail('context-budget', `Closure needs ${bytes} bytes; budget is ${task.budget.contextBytes}. No partial context emitted.`);
   return result;
 }

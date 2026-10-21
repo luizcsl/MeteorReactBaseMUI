@@ -87,3 +87,9 @@ A suíte usa nomes de campos, textos visíveis e atributos acessíveis existente
 Limites explícitos: a fixture atual é administradora. A suíte de navegador cobre o papel público/anônimo e proteções de identidade inclusive contra administrador, mas não comprova a matriz de um membro ativo não administrador, usuário desativado ou isolamento entre duas sessões. Esses casos continuam nos testes de servidor até existir uma fixture de navegador específica. Não se afirma recuperação completa de email/token válido, acessibilidade integral ou aprovação E2E sem uma execução real. As antigas features Gherkin com senhas fixas e passos de outra aplicação não foram reativadas.
 
 Quando o ambiente local bloquear o navegador, registre essa limitação e execute o workflow em CI autorizado; análise estática e empacotamento não substituem resultado de navegador.
+
+## Compatibilidade do bundle de navegador
+
+O React Router 7 usa `import.meta.hot` no entrypoint ESM para integração com Vite. O bundler clássico do Meteor 3.5 encapsula os módulos como scripts, onde essa sintaxe é inválida mesmo em um ramo não executado. `imports/libs/router.ts` seleciona o entrypoint CommonJS fornecido pelo mesmo pacote e mantém os tipos da API pública. Não há alteração de `node_modules`, supressão de erro no Cypress ou downgrade do roteador. O caminho de distribuição é uma dependência de compatibilidade explícita: ao atualizar o roteador, execute os testes e valide o bundle real.
+
+`tools/test/router-compat.test.mjs` verifica exports e uso do adaptador. Antes do Cypress, o workflow executa `node tools/check-browser-bundle.mjs .meteor/local/build/programs/web.browser`, que analisa os scripts reais emitidos pelo Meteor e rejeita uma qualificação vazia. Esse gate de sintaxe não substitui os testes reais do navegador. A técnica usa a resolução de arquivos de pacote suportada pelo [guia npm do Meteor](https://guide.meteor.com/using-npm-packages).

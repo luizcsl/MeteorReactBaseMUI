@@ -1,7 +1,7 @@
 import React from 'react';
 import { IAppMenu } from '../../../modules/modulesTypings';
 import { BoxProps, Typography } from '@mui/material';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '/imports/libs/router';
 import SysNavLinkStyles from './sysNavLinkStyles';
 
 const { Container } = SysNavLinkStyles;

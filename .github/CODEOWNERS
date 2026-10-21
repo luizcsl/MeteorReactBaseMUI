@@ -8,3 +8,9 @@
 /imports/api/attachmentsCollection.ts @luizcsl
 /imports/server/ @luizcsl
 /tests/ @luizcsl
+/.babelrc @luizcsl
+/.babel-plugins/ @luizcsl
+/.meteor/ @luizcsl
+/cypress*.config.ts @luizcsl
+
+/imports/libs/router.ts @luizcsl

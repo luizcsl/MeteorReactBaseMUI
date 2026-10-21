@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { Mongo } from 'meteor/mongo';
 import type { ClientSession } from 'mongodb';
-import { transactionRunner } from '../imports/core/server/transaction';
+import { transactionRunner, type MongoSession } from '../imports/core/server/transaction';
 
 const records = new Mongo.Collection<{ _id: string; value: string }>('transaction_port_qualification');
 const raw = records.rawCollection();
@@ -11,12 +11,27 @@ const database = records.rawDatabase();
 const sessions: ClientSession[] = [];
 // Meteor bundles mongodb 6; its public Db.client is absent from the app's older transitive driver typings.
 const driverDatabase = database as typeof database & { readonly client: { startSession(): ClientSession } };
-const start = () => { const session = driverDatabase.client.startSession(); sessions.push(session); return session; };
-const runner = () => transactionRunner(start, session => {
-  const native = session as ClientSession;
+interface DriverSessionPort extends MongoSession { readonly native: ClientSession }
+const start = (): DriverSessionPort => {
+  const native = driverDatabase.client.startSession();
+  sessions.push(native);
   return {
-    first: { session, write: (id: string) => raw.insertOne({ _id: id, value: 'first' }, { session: native }) },
-    second: { session, write: (id: string) => raw.insertOne({ _id: id, value: 'second' }, { session: native }) }
+    native,
+    // Driver generations differ in withTransaction's return type. Capture the callback
+    // result explicitly without changing the real driver's commit/retry/abort behavior.
+    async withTransaction<T>(work: () => Promise<T>): Promise<T | undefined> {
+      let result: T | undefined;
+      await native.withTransaction(async () => { result = await work(); return result; });
+      return result;
+    },
+    endSession: () => native.endSession()
+  };
+};
+const runner = () => transactionRunner(start, session => {
+  const native = (session as DriverSessionPort).native;
+  return {
+    first: { session: native, write: (id: string) => raw.insertOne({ _id: id, value: 'first' }, { session: native }) },
+    second: { session: native, write: (id: string) => raw.insertOne({ _id: id, value: 'second' }, { session: native }) }
   };
 });
 

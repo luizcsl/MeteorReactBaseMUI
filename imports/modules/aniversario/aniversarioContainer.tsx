@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { IDefaultContainerProps } from '/imports/typings/BoilerplateDefaultTypings';
-import { useParams } from 'react-router';
+import { useParams } from '/imports/libs/router';
 import AniversarioListController from '/imports/modules/aniversario/pages/aniversarioList/aniversarioListController';
 import AniversarioDetailController from '/imports/modules/aniversario/pages/aniversarioDetail/aniversarioDetailContoller';
 import { hasValue } from '/imports/libs/hasValue';

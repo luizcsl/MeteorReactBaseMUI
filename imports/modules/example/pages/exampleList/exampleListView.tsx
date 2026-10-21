@@ -3,7 +3,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ExampleListControllerContext } from './exampleListController';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '/imports/libs/router';
 import { ComplexTable } from '../../../../ui/components/ComplexTable/ComplexTable';
 import DeleteDialog from '../../../../ui/appComponents/showDialog/custom/deleteDialog/deleteDialog';
 import ExampleListStyles from './exampleListStyles';

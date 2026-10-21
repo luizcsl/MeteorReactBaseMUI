@@ -14,3 +14,7 @@ The actual-driver suite proves:
 Ordinary `npm run test:security` prints `Transaction port: NOT QUALIFIED in this run` unless the transaction suite is explicitly requested. It does not register skipped transaction tests or count absence as success. `npm run verify:release` and CI explicitly require `npm run test:transactions`, in addition to generated-module runtime qualification and browser qualification.
 
 The suite uses synthetic records in `transaction_port_qualification`, deletes its test records, and must only target an isolated test database. The test-specific bound repositories are deliberately local to `tests/transactions.server.ts`; production modules must supply their own session-bound implementations and tests before claiming transaction support.
+
+## Executed evidence
+
+On 2026-10-21, Meteor 3.5.2 with its bundled MongoDB 7.0.16 passed the complete server suite against a fresh single-node replica set: **37 passing**, including all four transaction-port cases above. The replica set used synthetic test data and was stopped after the run. The earlier Meteor 3.5 attempt was terminated during compilation (exit 137) and contributes no qualification evidence. This result qualifies only the tested adapter port behavior, not unimplemented transaction integration in application repositories.

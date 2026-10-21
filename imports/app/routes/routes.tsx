@@ -1,7 +1,7 @@
 import Modules from '../../modules';
 import Pages from '../../sysPages/config';
 import { IAppMenu, IRoute } from '../../modules/modulesTypings';
-import { useLocation } from 'react-router';
+import { useLocation } from '/imports/libs/router';
 
 class SysRoutes {
 	private routes: Array<IRoute | null>;
