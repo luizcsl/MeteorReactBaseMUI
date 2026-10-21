@@ -1,3 +1,4 @@
+import { exampleListProjection, exampleDetailProjection } from './exampleExposure';
 import { withBoundedUpload } from '../../../server/boundedUploads';
 // region Imports
 import { Recurso } from '../config/recursos';
@@ -45,7 +46,7 @@ class ExampleServerApi extends ProductServerBase<IExample> {
 			'exampleList',
 			(filter = {}) => {
 				return this.defaultListCollectionPublication(filter, {
-					projection: { title: 1, type: 1, typeMulti: 1, createdat: 1 }
+					projection: exampleListProjection
 				});
 			},
 			async (doc: IExample & { nomeUsuario: string }) => {
@@ -56,25 +57,7 @@ class ExampleServerApi extends ProductServerBase<IExample> {
 
 		this.addPublication('exampleDetail', (filter = {}) => {
 			return this.defaultDetailCollectionPublication(filter, {
-				projection: {
-					contacts: 1,
-					title: 1,
-					description: 1,
-					type: 1,
-					typeMulti: 1,
-					date: 1,
-					files: 1,
-					images: 1,
-					audios: 1,
-					chip: 1,
-					statusRadio: 1,
-					statusToggle: 1,
-					slider: 1,
-					check: 1,
-					address: 1,
-					image: 1,
-					audio: 1
-				}
+				projection: exampleDetailProjection
 			});
 		});
 

@@ -1,3 +1,4 @@
+import { assertAllowedValues, LegacyValueError } from '../legacy/allowedValues';
 import { noAvatarBase64, noImageBase64 } from './noimage';
 import { isArray, isObject, merge } from 'lodash';
 import { hasValue } from '../libs/hasValue';
@@ -443,6 +444,13 @@ export class ServerApiBase<Doc extends IDoc> {
 	 */
 	_checkDataBySchema = (_docObj: Partial<Doc>, fieldsNamesIgnoreCheck: string[] = []): Partial<Doc> => {
 		const schema = this.getSchema();
+		try {
+			assertAllowedValues(schema, _docObj as Record<string, unknown>, fieldsNamesIgnoreCheck);
+		} catch (error) {
+			if (error instanceof LegacyValueError)
+				throw new Meteor.Error('invalid-field-value', `Campo inválido: ${error.field}`, error.rule);
+			throw error;
+		}
 		const schemaKeys = Object.keys(schema);
 		const newDataObj = this._prepareData(_docObj);
 		const objForCheck = { ...newDataObj };
@@ -963,23 +971,47 @@ export class ServerApiBase<Doc extends IDoc> {
 
 		if (Meteor.isServer) {
 			Meteor.publish(`${self.collectionName}.${publication}`, async function (query, options) {
-				const subHandle = await (
+				let stopped = false;
+				let subHandle: { stop: () => unknown } | undefined;
+				let pending = Promise.resolve();
+				// Transform callbacks can await I/O. Preserve observer order and publish
+				// the initial documents before announcing that the subscription is ready.
+				const enqueue = (publish: () => Promise<void> | void) => {
+					pending = pending
+						.then(async () => {
+							if (!stopped) await publish();
+						})
+						.catch((error) => {
+							if (!stopped) this.error(error);
+							stopped = true;
+						});
+				};
+				this.onStop(() => {
+					stopped = true;
+					void subHandle?.stop();
+				});
+				subHandle = await (
 					await newPublicationsFunction(query, options)
 				)?.observe({
-					added: async (document: { _id: string }) => {
-						this.added(`${self.collectionName}`, document._id, await transformDocFunc(document));
+					added: (document: { _id: string }) => {
+						enqueue(async () => {
+							const transformed = await transformDocFunc(document);
+							if (!stopped) this.added(`${self.collectionName}`, document._id, transformed);
+						});
 					},
-					changed: async (newDocument: { _id: string }) => {
-						this.changed(`${self.collectionName}`, newDocument._id, await transformDocFunc(newDocument));
+					changed: (newDocument: { _id: string }) => {
+						enqueue(async () => {
+							const transformed = await transformDocFunc(newDocument);
+							if (!stopped) this.changed(`${self.collectionName}`, newDocument._id, transformed);
+						});
 					},
 					removed: (oldDocument: { _id: string }) => {
-						this.removed(`${self.collectionName}`, oldDocument._id);
+						enqueue(() => this.removed(`${self.collectionName}`, oldDocument._id));
 					}
 				});
-				this.ready();
-				this.onStop(() => {
-					subHandle && subHandle.stop();
-				});
+				await pending;
+				if (stopped) void subHandle?.stop();
+				else this.ready();
 			});
 
 			self.publications[publication] = newPublicationsFunction;
@@ -1071,6 +1103,7 @@ export class ServerApiBase<Doc extends IDoc> {
 		const imgFields: { [key: string]: any } = {};
 
 		Object.keys(this.schema).forEach((field) => {
+			if (optionsPub.projection?.[field] !== 1) return; // Preserve the explicit consumer projection, including media.
 			if (this.schema[field].isImage) {
 				imgFields['has' + field] = { $or: '$' + field };
 				delete optionsPub.projection[field];

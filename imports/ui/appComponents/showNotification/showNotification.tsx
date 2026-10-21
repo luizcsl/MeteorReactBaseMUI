@@ -103,7 +103,7 @@ export const ShowNotification: React.FC<IShowNotificationProps> = ({
 	return (
 		<Snackbar
 			open={open}
-			onClose={close}
+			onClose={(event, reason) => close?.({ event, reason })}
 			autoHideDuration={duration}
 			anchorOrigin={{
 				vertical: vertical,
@@ -141,7 +141,7 @@ export const ShowNotification: React.FC<IShowNotificationProps> = ({
 									</Button>
 								)}
 						{showCloseButton && (
-							<IconButton onClick={close}>
+							<IconButton onClick={(event) => close?.({ event })}>
 								<SysIcon name={'close'} />
 							</IconButton>
 						)}

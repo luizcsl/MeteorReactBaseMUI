@@ -1,3 +1,4 @@
+import { EXAMPLE_CATEGORIES, EXAMPLE_PRIORITIES, EXAMPLE_GROUPS, EXAMPLE_RADIO_PRIORITIES } from './exampleValues';
 import { IDoc } from '../../../typings/IDoc';
 import { ISchema } from '../../../typings/ISchema';
 
@@ -27,36 +28,27 @@ export const exampleSch: ISchema<IExample> = {
 	},
 
 	check: {
+		allowedValues: EXAMPLE_GROUPS,
 		type: Array<String>,
 		label: 'Grupos associados',
 		defaultValue: [],
 		optional: true,
-		options: () => [
-			{ value: 'Grupo 1', label: 'Grupo 1' },
-			{ value: 'Grupo 2', label: 'Grupo 2' },
-			{ value: 'Grupo 3', label: 'Grupo 3' }
-		]
+		options: () => EXAMPLE_GROUPS.map((value) => ({ value, label: value }))
 	},
 	type: {
+		allowedValues: EXAMPLE_CATEGORIES,
 		type: String,
 		label: 'Categoria',
 		defaultValue: '',
 		optional: false,
-		options: () => [
-			{ value: 'Categoria A', label: 'Categoria A' },
-			{ value: 'Categoria B', label: 'Categoria B' },
-			{ value: 'Categoria C', label: 'Categoria C' }
-		]
+		options: () => EXAMPLE_CATEGORIES.map((value) => ({ value, label: value }))
 	},
 	typeMulti: {
+		allowedValues: EXAMPLE_PRIORITIES,
 		type: String,
 		label: 'Prioridade',
 		optional: false,
-		options: () => [
-			{ value: 'alta', label: 'Alta' },
-			{ value: 'media', label: 'Média' },
-			{ value: 'baixa', label: 'Baixa' }
-		]
+		options: () => EXAMPLE_PRIORITIES.map((value, index) => ({ value, label: ['Alta', 'Média', 'Baixa'][index] }))
 	},
 	date: {
 		type: Date,
@@ -157,6 +149,7 @@ export const exampleSch: ISchema<IExample> = {
 		min: 0
 	},
 	statusRadio: {
+		allowedValues: EXAMPLE_RADIO_PRIORITIES,
 		type: String,
 		label: 'Prioridade',
 		defaultValue: '',

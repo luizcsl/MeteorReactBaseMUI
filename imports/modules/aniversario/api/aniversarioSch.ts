@@ -1,6 +1,6 @@
 import { IDoc } from '/imports/typings/IDoc';
 import { ISchema } from '/imports/typings/ISchema';
-import {hasValue} from "/imports/libs/hasValue";
+import { hasValue } from '../../../libs/hasValue';
 
 export const aniversarioSch: ISchema<IAniversario> = {
 	name: {
@@ -8,30 +8,30 @@ export const aniversarioSch: ISchema<IAniversario> = {
 		label: 'Nome',
 		optional: false
 	},
-  birthday: {
-    type: Date,
-    label: 'Data de nascimento',
-    optional: false
-  },
-  phone: {
-    type: String,
-    label: 'Telefone',
-    optional: true,
-    mask: '(##) ####-####'
-  },
+	birthday: {
+		type: Date,
+		label: 'Data de nascimento',
+		optional: false
+	},
+	phone: {
+		type: String,
+		label: 'Telefone',
+		optional: true,
+		mask: '(##) ####-####'
+	},
 	remember: {
+		allowedValues: [true],
 		type: Array<Boolean>,
 		label: 'Lembrete',
-    options: () => [
-      { value: true, label: 'Enviar lembrete' },
-    ],
+		options: () => [{ value: true, label: 'Enviar lembrete' }],
 		optional: true
 	},
 	delivery: {
+		allowedValues: ['1', '2', '3'],
 		type: String,
 		label: 'Quando enviar',
 		optional: false,
-    visibilityFunction: (doc: IAniversario) => hasValue(doc.remember),
+		visibilityFunction: (doc: IAniversario) => hasValue(doc.remember),
 		options: () => [
 			{ value: '1', label: '1 dia antes' },
 			{ value: '2', label: '2 dias antes' },
@@ -42,8 +42,8 @@ export const aniversarioSch: ISchema<IAniversario> = {
 
 export interface IAniversario extends IDoc {
 	name: string;
-  birthday: Date;
-  phone: string;
-  remember: boolean;
-  delivery: string;
+	birthday: Date;
+	phone: string;
+	remember: boolean;
+	delivery: string;
 }

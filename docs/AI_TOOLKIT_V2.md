@@ -21,6 +21,10 @@ CLI invocations reject unknown options, duplicate options, positional arguments 
 
 `patch:check` inspects both the original and destination paths of a rename, independently of Git rename-detection settings. Both paths must be in scope and count against the changed-file budget; moving a protected file into an allowed directory does not authorize its removal.
 
+## Legacy fields
+
+Use `npm run legacy:check -- --module example` to inspect explicit field propagation and server domain constraints. Enriched architecture manifests link validators, publications, controllers and test sources. See [legacy field contracts and acceptance](LEGACY_FIELDS.md); static inspection alone leaves functional acceptance pending.
+
 ## Architecture and ownership
 
 1. Application runtime: `imports/core/recipes` validates metadata, authorizes operations and projects results. `imports/core/ui` derives form/list state from that metadata. No model API or agent executor is imported into application code.

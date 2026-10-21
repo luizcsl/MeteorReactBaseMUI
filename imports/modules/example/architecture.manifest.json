@@ -4,5 +4,85 @@
 	"architecture": "legacy",
 	"reference": false,
 	"publicContracts": [],
-	"guidance": "Legacy capabilities demo using ProductBase/ProductServerBase and offline compatibility code. Do not use as the pattern for new modules."
+	"guidance": "Legacy capabilities demo using ProductBase/ProductServerBase and offline compatibility code. Do not use as the pattern for new modules.",
+	"legacy": {
+		"schema": {
+			"file": "imports/modules/example/api/exampleSch.ts",
+			"symbol": "exampleSch"
+		},
+		"server": {
+			"file": "imports/modules/example/api/exampleServerApi.ts",
+			"symbol": "ExampleServerApi"
+		},
+		"validator": {
+			"file": "imports/api/serverBase.ts",
+			"symbol": "ServerApiBase._checkDataBySchema"
+		},
+		"publications": [
+			{
+				"name": "exampleList",
+				"consumer": "list",
+				"delegate": "defaultListCollectionPublication"
+			},
+			{
+				"name": "exampleDetail",
+				"consumer": "detail",
+				"delegate": "defaultDetailCollectionPublication"
+			}
+		],
+		"controllers": {
+			"list": {
+				"file": "imports/modules/example/pages/exampleList/exampleListController.tsx",
+				"symbol": "default"
+			},
+			"detail": {
+				"file": "imports/modules/example/pages/exampleDetail/exampleDetailContoller.tsx",
+				"symbol": "default"
+			}
+		},
+		"tests": [
+			{
+				"file": "imports/modules/example/tests/fields.node.test.ts",
+				"symbol": "Example field contracts",
+				"command": "npm run test:example:contracts",
+				"assertions": ["allowed values, required fields, malformed arrays, conditional and nested validation"]
+			},
+			{
+				"file": "imports/modules/example/tests/server/fields.test.ts",
+				"symbol": "Example fields over real Mongo and DDP",
+				"command": "npm run test:example:server",
+				"assertions": [
+					"valid insert/update, denied writes leave Mongo unchanged, fresh list/detail subscriptions, identity denial"
+				]
+			},
+			{
+				"file": ".cypress/example/fields.cy.js",
+				"symbol": "Example field domain, UI and real persistence",
+				"command": "npm run test:example:browser",
+				"assertions": ["real form insert/edit, detail and list after reload, invalid direct DDP update rejected"]
+			}
+		],
+		"exposure": {
+			"file": "imports/modules/example/api/exampleExposure.ts",
+			"list": "EXAMPLE_LIST_FIELDS",
+			"listOmitted": "EXAMPLE_LIST_OMITTED",
+			"detail": "EXAMPLE_DETAIL_FIELDS",
+			"detailOmitted": "EXAMPLE_DETAIL_OMITTED",
+			"form": "EXAMPLE_FORM_FIELDS",
+			"formOmitted": "EXAMPLE_FORM_OMITTED",
+			"reducedSchema": {
+				"file": "imports/modules/example/pages/exampleList/exampleListController.tsx",
+				"symbol": "exampleSchReduzido"
+			},
+			"formView": {
+				"file": "imports/modules/example/pages/exampleDetail/exampleDetailView.tsx",
+				"symbol": "default"
+			},
+			"listView": {
+				"file": "imports/modules/example/pages/exampleList/exampleListView.tsx",
+				"symbol": "default"
+			}
+		},
+		"requiredFieldPolicy": "reject-unmigrated-writes"
+	}
 }

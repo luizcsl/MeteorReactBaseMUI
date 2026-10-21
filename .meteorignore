@@ -19,3 +19,6 @@ jatai-web/**
 
 # Node-only property, migration and recipe qualification suites.
 tests/*.node.test.ts
+
+# Focused Node-only module contract tests.
+imports/modules/**/tests/*.node.test.ts

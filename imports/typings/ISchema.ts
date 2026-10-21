@@ -1,4 +1,4 @@
-import { IOption } from '../ui/components/InterfaceBaseSimpleFormComponent';
+import type { IOption } from '../ui/components/InterfaceBaseSimpleFormComponent';
 import { IDoc } from './IDoc';
 
 export type LabelValue = {
@@ -12,6 +12,8 @@ export type IDefaultSize = {
 };
 
 export interface IDefField<C> {
+	/** Static server-enforced membership; for arrays it applies to each element. options remains UI-only. */
+	allowedValues?: readonly (string | number | boolean)[];
 	type: any;
 	label?: string;
 	defaultValue?: any;

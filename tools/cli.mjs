@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { inspectLegacyFields } from './legacy-fields.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -32,6 +33,10 @@ try {
 	const option = (name) => options.get(name);
 	if (args.includes('--help') || command === '--help') {
 		const help = {
+			'legacy:check': {
+				command: 'npm run legacy:check -- --module example',
+				note: 'Static AST inspection only. Checks actual publications, reduced schema, form and explicit omission policy. Linked tests remain mandatory.'
+			},
 			'module:new': {
 				command: 'npm run module:new -- --spec templates/owner-crud/example.spec.json',
 				schema: 'tools/schemas/module-spec.v1.schema.json',
@@ -61,6 +66,7 @@ try {
 				help[command] || {
 					commands: [
 						'doctor',
+						'legacy:check',
 						'module:new',
 						'agent:context',
 						'task:validate',
@@ -87,6 +93,9 @@ try {
 	}
 	let result;
 	switch (command) {
+		case 'legacy:check':
+			result = inspectLegacyFields(root, option('--module'));
+			break;
 		case 'doctor':
 			result = doctor(root);
 			break;
@@ -158,7 +167,7 @@ try {
 	}
 	if (verifications.length) result.verifications = verifications;
 	process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-	if (result.status === 'failed') process.exitCode = 1;
+	if (result.status === 'failed' || (command === 'legacy:check' && result.status !== 'passed')) process.exitCode = 1;
 } catch (error) {
 	process.stderr.write(
 		JSON.stringify(

@@ -16,3 +16,5 @@ import './recipes.server';
 import '../imports/integration/server/tests';
 
 import './requests.server';
+
+import '../imports/modules/example/tests/server/fields.test';

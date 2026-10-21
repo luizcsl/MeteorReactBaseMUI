@@ -1,3 +1,4 @@
+import { exampleListSchema } from '../../api/exampleExposure';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import ExampleListView from './exampleListView';
 import { nanoid } from 'nanoid';
@@ -46,8 +47,7 @@ const ExampleListController = () => {
 		[]
 	);
 
-	const { title, type, typeMulti } = exampleApi.getSchema();
-	const exampleSchReduzido = { title, type, typeMulti, createdat: { type: Date, label: 'Criado em' } };
+	const exampleSchReduzido = exampleListSchema;
 	const navigate = useNavigate();
 
 	const { sortProperties, filter } = config;

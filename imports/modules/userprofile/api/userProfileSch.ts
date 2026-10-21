@@ -1,3 +1,4 @@
+import { EnumUserRoles } from './enumUser';
 import { validarEmail } from '../../../libs/validaEmail';
 import { IDoc } from '../../../typings/IDoc';
 import { ISchema } from '../../../typings/ISchema';
@@ -39,6 +40,7 @@ export const userProfileSch: ISchema<IUserProfile> = {
 		mask: '(##) ####-####'
 	},
 	roles: {
+		allowedValues: Object.values(EnumUserRoles),
 		type: [String],
 		label: 'Perfil de acesso',
 		defaultValue: [],
@@ -55,6 +57,7 @@ export const userProfileSch: ISchema<IUserProfile> = {
 		]
 	},
 	status: {
+		allowedValues: ['active', 'disabled'],
 		type: String,
 		label: 'Status',
 		defaultValue: 'disabled',

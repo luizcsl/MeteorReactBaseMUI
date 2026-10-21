@@ -41,3 +41,5 @@ Read [validation status](AI_READY_VALIDATION.md) for actual executed checks. Too
 Read the nearest `architecture.manifest.json` or generated `module.manifest.json` before editing. `agent:context` now includes architecture classifications and manifest hashes for modules in its dependency closure. `tasks` is the owner CRUD reference; `requests` plus the public `requestitems/contracts` entrypoint demonstrates a [complete approval journey](REQUEST_JOURNEY.md). `example`, `aniversario` and `userprofile` are explicitly legacy compatibility modules. Their ProductBase, publications and offline helpers are not the new-module pattern. Shared compatibility routing is a composition boundary, not permission to import another module's private implementation.
 
 Use [domain contracts](DOMAIN_CONTRACTS.md) for date/money/reference fields and [qualification](BOILERPLATE_QUALIFICATION.md) before accepting an integrated result.
+
+Para evolução de campos legados, consulte [domínios, propagação e testes específicos](LEGACY_FIELDS.md). Execute `npm run legacy:check -- --module example` e as suítes vinculadas às fontes antes de alegar aceitação funcional.

@@ -4,5 +4,51 @@
 	"architecture": "legacy",
 	"reference": false,
 	"publicContracts": [],
-	"guidance": "Legacy ProductBase module retained for compatibility. New modules use tasks or structured recipes."
+	"guidance": "Legacy ProductBase module retained for compatibility. New modules use tasks or structured recipes.",
+	"legacy": {
+		"schema": {
+			"file": "imports/modules/aniversario/api/aniversarioSch.ts",
+			"symbol": "aniversarioSch"
+		},
+		"server": {
+			"file": "imports/modules/aniversario/api/aniversarioServerApi.ts",
+			"symbol": "AniversarioServerApi"
+		},
+		"validator": {
+			"file": "imports/api/serverBase.ts",
+			"symbol": "ServerApiBase._checkDataBySchema"
+		},
+		"publications": [
+			{
+				"name": "aniversarioList",
+				"consumer": "list",
+				"delegate": "defaultListCollectionPublication"
+			},
+			{
+				"name": "aniversarioDetail",
+				"consumer": "detail",
+				"delegate": "defaultDetailCollectionPublication"
+			}
+		],
+		"controllers": {
+			"list": {
+				"file": "imports/modules/aniversario/pages/aniversarioList/aniversarioListController.tsx",
+				"symbol": "default"
+			},
+			"detail": {
+				"file": "imports/modules/aniversario/pages/aniversarioDetail/aniversarioDetailContoller.tsx",
+				"symbol": "default"
+			}
+		},
+		"tests": [
+			{
+				"file": "tests/legacy-fields.node.test.ts",
+				"symbol": "Shared legacy constraint cases",
+				"command": "npm run test:example:contracts",
+				"assertions": ["shared validator constraints; not Aniversario functional acceptance"]
+			}
+		],
+		"exposure": null,
+		"requiredFieldPolicy": "manual-review"
+	}
 }

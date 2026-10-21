@@ -1,3 +1,4 @@
+import { validateLegacyMetadata } from './legacy-fields.mjs';
 import fs from 'node:fs';
 import { confined, exact, fail, hash } from './lib.mjs';
 export function architectureContext(root, sourceFiles) {
@@ -13,7 +14,11 @@ export function architectureContext(root, sourceFiles) {
 			const content = fs.readFileSync(target, 'utf8'),
 				manifest = JSON.parse(content);
 			if (filename === 'architecture.manifest.json') {
-				exact(manifest, ['schemaVersion', 'name', 'architecture', 'reference', 'publicContracts', 'guidance']);
+				exact(
+					manifest,
+					['schemaVersion', 'name', 'architecture', 'reference', 'publicContracts', 'guidance', 'legacy'],
+					['schemaVersion', 'name', 'architecture', 'reference', 'publicContracts', 'guidance']
+				);
 				if (
 					manifest.schemaVersion !== 1 ||
 					manifest.name !== name ||
@@ -24,7 +29,16 @@ export function architectureContext(root, sourceFiles) {
 					typeof manifest.guidance !== 'string'
 				)
 					fail('architecture-schema', 'Invalid architecture manifest', file);
-				return { module: name, file, hash: hash(content), ...manifest };
+				const legacyReferences = manifest.legacy
+					? validateLegacyMetadata(root, name, manifest.legacy).references
+					: undefined;
+				return {
+					module: name,
+					file,
+					hash: hash(content),
+					...manifest,
+					...(legacyReferences ? { legacyReferences } : {})
+				};
 			}
 			const architecture =
 				manifest.templateVersion === '2.0.0'

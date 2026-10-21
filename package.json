@@ -30,9 +30,9 @@
     "templates:verify": "node tools/cli.mjs templates:verify",
     "check:changed": "node tools/cli.mjs check:changed",
     "test:toolkit": "node --test tools/test/*.test.mjs evals/*.test.mjs tools/harness/container-fixtures/meteor/*.test.mjs",
-    "test:security": "TEST_SERVER_ONLY=1 meteor test --once --driver-package meteortesting:mocha --port 3102",
-    "verify": "npm run typecheck && npm run test:core && npm run test:mutations && npm run test:toolkit && npm run boundaries:check && npm run templates:verify && npm run docs:verify && npm run test:security",
-    "verify:release": "npm run verify && npm run test:migrations && npm run test:transactions && npm run templates:runtime && npm run test:browser && npm run test:recipe-ui && npm run test:request-journey && meteor build /tmp/meteor-release-build --directory",
+    "test:security": "node tools/run-example-tests.mjs --security --test-source tests/server.ts",
+    "verify": "npm run typecheck && npm run test:core && npm run test:mutations && npm run test:toolkit && npm run boundaries:check && npm run templates:verify && npm run docs:verify && npm run legacy:check -- --module example && npm run test:example:contracts && npm run test:security",
+    "verify:release": "npm run verify && npm run test:migrations && npm run test:transactions && npm run templates:runtime && npm run test:browser && npm run test:recipe-ui && npm run test:request-journey && npm run test:example:browser && meteor build /tmp/meteor-release-build --directory",
     "test:core": "node tools/run-core-tests.mjs",
     "eval:agents": "node evals/report.mjs",
     "templates:runtime": "node tools/verify-template-runtime.mjs",
@@ -50,7 +50,12 @@
     "test:harness": "node tools/verify-container-harness.mjs",
     "module:integrate": "node tools/cli.mjs module:integrate",
     "test:request-journey": "node tools/verify-request-journey.mjs",
-    "qualify": "node tools/qualify.mjs"
+    "qualify": "node tools/qualify.mjs",
+    "test:example:contracts": "node tools/run-example-contract-tests.mjs imports/modules/example/tests/fields.node.test.ts",
+    "legacy:check": "node tools/cli.mjs legacy:check",
+    "test:example:server": "node tools/run-example-tests.mjs --server --test-source imports/modules/example/tests/server/fields.test.ts",
+    "test:example:browser": "node tools/run-example-tests.mjs --browser --test-source .cypress/example/fields.cy.js",
+    "test:example:cypress": "cypress run --config-file cypress.example.config.ts --spec .cypress/example/fields.cy.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",

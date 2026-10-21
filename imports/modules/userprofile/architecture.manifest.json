@@ -4,5 +4,51 @@
 	"architecture": "legacy",
 	"reference": false,
 	"publicContracts": [],
-	"guidance": "Legacy identity/profile bridge. Do not infer authority from profile UI fields or copy its architecture into new modules."
+	"guidance": "Legacy identity/profile bridge. Do not infer authority from profile UI fields or copy its architecture into new modules.",
+	"legacy": {
+		"schema": {
+			"file": "imports/modules/userprofile/api/userProfileSch.ts",
+			"symbol": "userProfileSch"
+		},
+		"server": {
+			"file": "imports/modules/userprofile/api/userProfileServerApi.ts",
+			"symbol": "UserProfileServerApi"
+		},
+		"validator": {
+			"file": "imports/api/serverBase.ts",
+			"symbol": "ServerApiBase._checkDataBySchema"
+		},
+		"publications": [
+			{
+				"name": "userProfileList",
+				"consumer": "list",
+				"delegate": "defaultListCollectionPublication"
+			},
+			{
+				"name": "userProfileDetail",
+				"consumer": "detail",
+				"delegate": "defaultDetailCollectionPublication"
+			}
+		],
+		"controllers": {
+			"list": {
+				"file": "imports/modules/userprofile/pages/UserProfileList/userProfileListController.tsx",
+				"symbol": "default"
+			},
+			"detail": {
+				"file": "imports/modules/userprofile/pages/UserProfileDetail/userProfileDetailController.tsx",
+				"symbol": "default"
+			}
+		},
+		"tests": [
+			{
+				"file": "tests/profile-publication.server.ts",
+				"symbol": "logged profile publication over real DDP",
+				"command": "npm run test:security",
+				"assertions": ["active account projection and isolation"]
+			}
+		],
+		"exposure": null,
+		"requiredFieldPolicy": "manual-review"
+	}
 }

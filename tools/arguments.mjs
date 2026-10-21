@@ -3,6 +3,7 @@ import { fail } from './lib.mjs';
 // Validate the whole invocation before reading input files or performing mutations.
 const commands = {
 	doctor: {},
+	'legacy:check': { values: ['--module'], required: ['--module'] },
 	'module:new': { values: ['--spec'], required: ['--spec'] },
 	'recipe:new': { values: ['--definition'], required: ['--definition'] },
 	'module:integrate': { values: ['--plan', '--apply'], oneOf: ['--plan', '--apply'] },

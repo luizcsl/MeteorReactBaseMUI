@@ -85,8 +85,7 @@ export const SysSelectField: React.FC<ISysSelectFieldProps> = ({
 
 	const handleChange = (e: SelectChangeEvent) => {
 		const newValue = e.target.value;
-		const selectedOption = optionsState?.find((option) => option.value === newValue);
-		setValueState(selectedOption?.label || '');
+		setValueState(newValue);
 		if (inSysFormContext) {
 			controllerSysForm?.onChangeComponentValue({ refComponent: refObject!, value: newValue });
 		}
@@ -134,7 +133,8 @@ export const SysSelectField: React.FC<ISysSelectFieldProps> = ({
 									</Typography>
 								);
 							}
-							return options;
+							if (renderValue) return renderValue(options);
+							return optionsState?.find((option) => option.value === options)?.label ?? options;
 						}}>
 						{options?.length === 0 ? (
 							<MenuItem id={'NoValues'} disabled value="">
