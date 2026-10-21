@@ -12,7 +12,8 @@ export function changedFiles(root) {
 	return [
 		...new Set(
 			[
-				...git(root, ['diff', '--name-only', '-z', 'HEAD', '--']).split('\0'),
+				// A rename changes both paths; rename detection would hide the source from scope checks.
+				...git(root, ['diff', '--no-renames', '--name-only', '-z', 'HEAD', '--']).split('\0'),
 				// Do not use --exclude-standard: an ignored source file still affects execution.
 				// Only fixed root-level build/dependency caches are excluded, never nested source paths.
 				...git(root, [

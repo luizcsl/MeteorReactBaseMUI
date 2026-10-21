@@ -17,6 +17,22 @@ Implementation reviewed on 2026-10-21, building on the separately qualified [fir
 
 ## Mandatory hosted qualification
 
+### Toolkit review follow-up — 2026-10-21
+
+Reviewed working tree based on `58a7a49fc7513232dca73ba0af5facc80fb6c5c0`. Changes enforce strict CLI arguments before dispatch and inspect both sides of Git renames for scope/budget enforcement. Added five regression cases; no application schema, generated module, dependency lock or persisted-data migration changed. Existing CLI callers that send ignored, repeated or conflicting options must correct their invocations; renames now consume two changed paths.
+
+Observed with Node 24.21.0 and subprocess execution enabled:
+
+- Targeted argument/toolkit tests: 16 passed, zero failures or skips.
+- `npm run doctor`: passed; database connectivity remains explicitly unverified.
+- `npm run typecheck`: failed on missing `BrowserRouter` and `Link` exports in the installed React Router types.
+- `npm run test:toolkit`: 113 passed, one failed, one existing Mongo integration skip. The failure is the router compatibility test: the expected upstream CommonJS file is absent.
+- Installed React Router is 6.30.4; `package-lock.json` requires 7.18.4. This dependency drift blocks qualification; it is not grounds to weaken the adapter or its tests.
+- `npm run verify`: failed at its initial typecheck; subsequent gates in that command did not execute.
+- `npm run docs:verify` and `npm run boundaries:check`: passed. The latter still reports existing legacy cycles and the pinned attachments bridge as review debt.
+
+The initial restricted-shell attempt used Node 20 and could not capture subprocess output reliably (`EPERM`); the targeted tests and required commands above were rerun with the supported Node and execution permissions. This follow-up is not full integration approval. Restore dependencies from the lockfile and rerun full qualification before integration; no browser, live database or real-model productivity result is claimed for these changes.
+
 The workflows require application/server/transaction/generated-module gates, mutation checks, native Mongo migration execution, application and recipe UI browsers, production build, dependency audits and SBOM. The container-harness workflow separately exercises real Docker isolation and receipt integrity without calling a model. Missing infrastructure and nonzero/zero-test/skip outcomes are failures in their required qualification commands.
 
 ## Not demonstrated by this delivery alone

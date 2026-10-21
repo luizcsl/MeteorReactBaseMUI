@@ -17,6 +17,10 @@ This layer makes common changes smaller and mechanically checkable. It does not 
 
 Machine consumers should invoke `node tools/cli.mjs ...` directly. npm may write human-readable banners before JSON. All paths in task/model operation documents are untrusted; tool validators reject unexpected fields, traversal and symlinks.
 
+CLI invocations reject unknown options, duplicate options, positional arguments and missing values with exit code 2 before reading input files or dispatching an operation. `module:evolve` requires exactly one of `--plan`, `--apply` or `--recover`; modes cannot be combined. `migration:export --apply` remains an explicit boolean flag. Use `--help` to inspect usage without executing a command.
+
+`patch:check` inspects both the original and destination paths of a rename, independently of Git rename-detection settings. Both paths must be in scope and count against the changed-file budget; moving a protected file into an allowed directory does not authorize its removal.
+
 ## Architecture and ownership
 
 1. Application runtime: `imports/core/recipes` validates metadata, authorizes operations and projects results. `imports/core/ui` derives form/list state from that metadata. No model API or agent executor is imported into application code.

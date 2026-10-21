@@ -6,7 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { validateSpec, validateTask, confined, allowed } from '../lib.mjs';
 import { context } from '../context.mjs';
-import { patchCheck, boundaries, taskTransition } from '../checks.mjs';
+import { patchCheck, boundaries, taskTransition, changedFiles } from '../checks.mjs';
 const example = JSON.parse(fs.readFileSync(new URL('../task.example.json', import.meta.url), 'utf8'));
 function fixture(t) {
 	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-toolkit-'));
@@ -110,6 +110,23 @@ test('usage over budget becomes needs-review, self-reported success cannot pass'
 	assert.equal(taskTransition(example, usage).state, 'running');
 	assert.equal(taskTransition(example, { ...usage, attempts: 4 }).state, 'needs-review');
 	assert.throws(() => taskTransition(example, { ...usage, tokens: -1 }));
+});
+
+test('renames cannot hide a protected source and count both changed paths against budget', (t) => {
+	const root = fixture(t);
+	const source = 'tests/protected.ts';
+	const destination = 'imports/modules/tasks/domain/moved.ts';
+	spawnSync('git', ['init', '-q'], { cwd: root });
+	write(root, source, 'export const protectedFixture = true;');
+	spawnSync('git', ['add', '.'], { cwd: root });
+	const commit = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'fixture'], { cwd: root });
+	assert.equal(commit.status, 0);
+	write(root, destination, fs.readFileSync(path.join(root, source)));
+	fs.unlinkSync(path.join(root, source));
+	spawnSync('git', ['add', '-A'], { cwd: root });
+	spawnSync('git', ['config', 'diff.renames', 'true'], { cwd: root });
+	assert.deepEqual(changedFiles(root), [destination, source]);
+	assert.throws(() => patchCheck(root, example), /Out-of-scope.*tests\/protected.ts/);
 });
 
 test('task usage persists cumulatively and cannot reset budgets by editing contract', async (t) => {

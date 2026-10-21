@@ -1,24 +1,18 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { readJson, fail, validateTask } from './lib.mjs';
+import { parseArguments } from './arguments.mjs';
 import { scaffold } from './scaffold.mjs';
 import { context } from './context.mjs';
 import { astGraph } from './ast.mjs';
 import { createRecipe } from './recipes.mjs';
 import { planEvolution, applyEvolution, recoverEvolution } from './evolve.mjs';
 import { migrateFile, rehearseRestore } from './migrations/runner.mjs';
-import { patchCheck, boundaries, docsCheck, doctor, taskTransition, saveTaskState, changedFiles } from './checks.mjs';
+import { patchCheck, boundaries, docsCheck, doctor, saveTaskState, changedFiles } from './checks.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const [command, ...args] = process.argv.slice(2);
-function option(name) {
-	const index = args.indexOf(name);
-	if (index < 0 || !args[index + 1] || args[index + 1].startsWith('--')) fail('usage', `Required ${name} VALUE`);
-	return args[index + 1];
-}
 const verifications = [];
 function run(cmd, argv) {
 	const result = spawnSync(cmd, argv, { cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
@@ -33,6 +27,8 @@ function run(cmd, argv) {
 		);
 }
 try {
+	const options = parseArguments(command, args);
+	const option = (name) => options.get(name);
 	if (args.includes('--help') || command === '--help') {
 		const help = {
 			'module:new': {
