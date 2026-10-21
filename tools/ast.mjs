@@ -1,3 +1,4 @@
+import { architectureContext } from './architecture.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
@@ -334,6 +335,10 @@ export function astContext(root, input) {
 		schemaVersion: 2,
 		task,
 		algorithm: 'typescript-ast-resolution-v2',
+		modules: architectureContext(
+			root,
+			records.map((record) => record.file)
+		),
 		externalDependencies: [...external].sort(),
 		files: records.sort((a, b) => a.file.localeCompare(b.file, 'en'))
 	};

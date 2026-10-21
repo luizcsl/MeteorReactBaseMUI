@@ -1,0 +1,8 @@
+{
+	"schemaVersion": 1,
+	"name": "example",
+	"architecture": "legacy",
+	"reference": false,
+	"publicContracts": [],
+	"guidance": "Legacy capabilities demo using ProductBase/ProductServerBase and offline compatibility code. Do not use as the pattern for new modules."
+}

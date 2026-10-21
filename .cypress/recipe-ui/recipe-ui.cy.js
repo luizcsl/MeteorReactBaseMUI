@@ -506,3 +506,49 @@ describe('schema-driven recipe UI with a controlled remote client', () => {
 		calls('list', 2);
 	});
 });
+
+describe('date, exact money, reference and cross-field form controls', () => {
+	beforeEach(() => {
+		cy.visit('/');
+		cy.window().its('recipeFixture').should('exist');
+		mount({ domain: true });
+	});
+	it('serializes dates, exact minor units and reference IDs; displays money on list and edit', () => {
+		field('Start').should('have.attr', 'type', 'date').type('2024-02-29');
+		field('End').type('2024-03-01');
+		field('Amount').clear().type('10.10');
+		field('Supplier').type('supplier1');
+		save().click();
+		calls('create', 1).then(([call]) =>
+			expect(call.args[0]).to.deep.equal({
+				start: '2024-02-29',
+				end: '2024-03-01',
+				amount: 1010,
+				supplier: 'supplier1'
+			})
+		);
+		cy.get('article').should('contain.text', 'Amount: BRL 10.10');
+		cy.get('article')
+			.contains('button', /^Edit$/)
+			.click();
+		field('Amount').should('have.value', '10.10');
+		field('Amount').clear().type('0.29');
+		save().click();
+		calls('update', 1).then(([call]) => expect(call.args[2].amount).to.equal(29));
+	});
+	it('rejects reversed dates and excess money precision before any write', () => {
+		field('Start').type('2024-03-01');
+		field('End').type('2024-02-29');
+		field('Amount').clear().type('1.001');
+		field('Supplier').type('supplier1');
+		form().submit();
+		form().find('[role="alert"]').should('be.visible');
+		calls('create', 0);
+		field('Amount').clear().type('1.00');
+		form().submit();
+		calls('create', 0);
+		field('End').clear().type('2024-03-02');
+		save().click();
+		calls('create', 1);
+	});
+});

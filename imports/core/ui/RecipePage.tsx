@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import { validateDefinition, type RecipeData, type RecipeDefinition } from '../recipes/definition';
+import {
+	formatMoney,
+	parseMoneyText,
+	parseRecipeFilters,
+	validateDefinition,
+	type RecipeData,
+	type RecipeDefinition
+} from '../recipes/definition';
 import { RecipeForm } from './RecipeForm';
 export interface RecipeRow {
 	id: string;
@@ -71,7 +78,11 @@ function ScopedRecipePage({ definition, client, parentId = null }: RecipePagePro
 		setLoading(true);
 		setError('');
 		try {
-			const next = await client.list(filters, 100, parentId);
+			const normalized = { ...filters };
+			for (const field of definition.fields)
+				if (field.type === 'money' && typeof normalized[field.name] === 'string')
+					normalized[field.name] = parseMoneyText(normalized[field.name] as string, field.scale!);
+			const next = await client.list(parseRecipeFilters(definition, normalized), 100, parentId);
 			if (token === serial.current && sameQuery(query)) setRows(next);
 		} catch {
 			if (token === serial.current && sameQuery(query))
@@ -113,7 +124,8 @@ function ScopedRecipePage({ definition, client, parentId = null }: RecipePagePro
 								key={name}
 								label={`Filter ${f.label}`}
 								select={f.type === 'enum' || f.type === 'boolean'}
-								type={f.type === 'integer' ? 'number' : 'text'}
+								type={f.type === 'date' ? 'date' : f.type === 'integer' ? 'number' : 'text'}
+								slotProps={{ inputLabel: f.type === 'date' ? { shrink: true } : undefined }}
 								value={filters[name] ?? ''}
 								onChange={(e) => {
 									const next = { ...filters };
@@ -186,7 +198,12 @@ function ScopedRecipePage({ definition, client, parentId = null }: RecipePagePro
 				rows.map((row) => (
 					<Box key={row.id} component="article" sx={{ border: 1, borderColor: 'divider', p: 2 }}>
 						<Typography>
-							{definition.fields.map((f) => `${f.label}: ${String(row.data[f.name] ?? '')}`).join(' · ')}
+							{definition.fields
+								.map(
+									(f) =>
+										`${f.label}: ${f.type === 'money' && typeof row.data[f.name] === 'number' ? f.currency + ' ' + formatMoney(row.data[f.name] as number, f.scale!) : String(row.data[f.name] ?? '')}`
+								)
+								.join(' · ')}
 						</Typography>
 						<Typography>State: {row.state}</Typography>
 						<Button disabled={busy} onClick={() => setEditing(row)}>

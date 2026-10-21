@@ -43,3 +43,7 @@ The workflows require application/server/transaction/generated-module gates, mut
 - Security certification or resistance to a compromised host/container engine. Protected code and hashes cannot make a dishonest verifier trustworthy, and same-process JavaScript unit tests are not a malicious-code proof.
 
 See [the toolkit guide](AI_TOOLKIT_V2.md), [structural evolution](STRUCTURAL_EVOLUTION.md), [migration operation](MIGRATIONS.md), [recipe integration](recipes/structured-recipes.md) and [harness integration](HARNESS_SYNERGIA.md) for the executable interfaces and remaining operator obligations.
+
+## Boilerplate product/integration stage — 2026-10-21
+
+See the [delivery report](BOILERPLATE_IMPROVEMENTS_REPORT.md) for source baseline, actual final gates, migration effects and limits of the additive integration/domain/journey changes. Earlier counts above remain historical evidence.

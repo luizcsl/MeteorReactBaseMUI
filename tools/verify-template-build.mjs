@@ -28,7 +28,7 @@ try {
 	process.stderr.write(result.stderr || '');
 	if (result.status !== 0) throw new Error('Generated template typecheck failed');
 	console.log(
-		'Generated owner-crud and four structured recipe fixtures typechecked; Meteor runtime test suite remains required.'
+		'Generated owner-crud and all structured recipe fixtures typechecked; Meteor runtime test suite remains required.'
 	);
 } finally {
 	fs.rmSync(temporary, { recursive: true, force: true });

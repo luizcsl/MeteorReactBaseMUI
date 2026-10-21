@@ -15,6 +15,7 @@
     "ai-runtime"
   ],
   "sha256": {
+    "architecture.manifest.json.template": "b1c2ebc6bafa1e95570c01c2f8f16c8892d1105f6878ff49c9ece5a9bfee4c58",
     "contracts/index.ts.template": "73443ea45ffef15b3d7534f9edba480d51fff10ea923507e6630256bcd1cb863",
     "domain/__MODULE__.ts.template": "ef46a5fa7f03a1bec865500d276e96d857536a0350a68303b110e5c3bba49c6b",
     "README.md.template": "9aa66190e6921f0641595d49e218dbd0fad30a379af063175e8c9a1d84778ebf",

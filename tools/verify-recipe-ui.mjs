@@ -124,6 +124,7 @@ async function main() {
 			return;
 		}
 		listener = await serveRecipeUI(prepared.bundle);
+		delete process.env.ELECTRON_RUN_AS_NODE;
 		const cypress = require('cypress');
 		const result = await cypress.run({
 			project: root,

@@ -15,7 +15,8 @@ test('CLI rejects typos, positional arguments, duplicates and missing values', (
 		['constructor', []],
 		['unknown', ['--help']],
 		[undefined, []]
-	]) assert.throws(() => parseArguments(command, args), { rule: 'usage' });
+	])
+		assert.throws(() => parseArguments(command, args), { rule: 'usage' });
 });
 
 test('evolution requires exactly one mode, without precedence between mutations', () => {
@@ -26,7 +27,10 @@ test('evolution requires exactly one mode, without precedence between mutations'
 });
 
 test('valid invocations preserve values, explicit migration apply and help', () => {
-	assert.equal(parseArguments('module:new', ['--spec', 'path with spaces.json']).get('--spec'), 'path with spaces.json');
+	assert.equal(
+		parseArguments('module:new', ['--spec', 'path with spaces.json']).get('--spec'),
+		'path with spaces.json'
+	);
 	assert.equal(parseArguments('module:new', ['--help']).get('--help'), true);
 	assert.equal(parseArguments('--help', []).size, 0);
 	const args = ['--store', 'store.json', '--plan', 'plan.json', '--json'];
@@ -39,9 +43,17 @@ test('CLI reports usage before attempting file reads or dispatching conflicting 
 		['module:evolve', '--recover', 'invalid/name', '--apply', '/nonexistent-plan.json'],
 		['migration:export', '--store', '/nonexistent-store.json', '--plan', '/nonexistent-plan.json', '--aply']
 	]) {
-		const result = spawnSync(process.execPath, [new URL('../cli.mjs', import.meta.url).pathname, ...args], { encoding: 'utf8' });
+		const result = spawnSync(process.execPath, [new URL('../cli.mjs', import.meta.url).pathname, ...args], {
+			encoding: 'utf8'
+		});
 		assert.equal(result.status, 2, result.stderr);
 		assert.equal(result.stdout, '');
 		assert.equal(JSON.parse(result.stderr).diagnostics[0].rule, 'usage');
 	}
+});
+
+test('integration requires exactly one plan or apply mode', () => {
+	for (const args of [[], ['--plan', 'a', '--apply', 'b'], ['--aply', 'a']])
+		assert.throws(() => parseArguments('module:integrate', args), { rule: 'usage' });
+	assert.equal(parseArguments('module:integrate', ['--plan', 'integration.json']).get('--plan'), 'integration.json');
 });

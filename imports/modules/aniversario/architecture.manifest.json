@@ -1,0 +1,8 @@
+{
+	"schemaVersion": 1,
+	"name": "aniversario",
+	"architecture": "legacy",
+	"reference": false,
+	"publicContracts": [],
+	"guidance": "Legacy ProductBase module retained for compatibility. New modules use tasks or structured recipes."
+}

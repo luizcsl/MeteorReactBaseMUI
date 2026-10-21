@@ -1,0 +1,8 @@
+{
+	"schemaVersion": 1,
+	"name": "requestitems",
+	"architecture": "domain-only",
+	"reference": false,
+	"publicContracts": ["contracts/index.ts"],
+	"guidance": "Consume only the public item contract. Persistence and authorization belong to the Requests aggregate."
+}

@@ -1,0 +1,19 @@
+# Tipos e regras de domínio das receitas
+
+A definição continua no schema 1, com extensão aditiva. O mesmo validador atende ao gerador, servidor, filtros e formulário. O preset [domain.json](../templates/recipes/domain.json) demonstra todos os novos tipos.
+
+| Tipo        | Metadados                                                                         | Valor em JSON, DDP e Mongo                                             | Interface                                                                              |
+| ----------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `date`      | `required`                                                                        | Data civil ISO `YYYY-MM-DD`, ano 0001–9999 e calendário válido         | Campo de data, sem conversão de fuso                                                   |
+| `money`     | `currency` de três letras maiúsculas, `scale` 0–4, `min` e `max` inteiros seguros | Inteiro em unidades mínimas; BRL com escala 2: `1010` representa 10,10 | Texto decimal convertido por BigInt, sem arredondamento; lista/edição mostram decimais |
+| `reference` | `target` com nome de módulo válido                                                | ID alfanumérico, `_` ou `-`, de 1–128 caracteres                       | Campo de ID com indicação da entidade; autorização repetida no servidor                |
+
+`required:false` aceita `null`; todos os campos continuam presentes no DTO. Opções de outro tipo, valores monetários fracionários no transporte, datas impossíveis, operadores e propriedades adicionais são rejeitados. A etiqueta de moeda não implementa câmbio nem verifica um catálogo cambial. A escala é parte do contrato, nunca inferida por locale. A entrada decimal usa ponto; a representação de persistência é sempre inteira.
+
+Regras declarativas limitadas usam `rules: [{ "kind": "lte", "left": "start", "right": "end" }]`. Os campos precisam existir, ser distintos e ter o mesmo tipo comparável (`integer`, `date` ou `money` com a mesma moeda/escala). A comparação ignora pares com `null`. A regra é avaliada sobre o DTO completo na criação e atualização; filtros individuais não exigem os demais campos. Código executável e regras arbitrárias permanecem proibidos. Falhas indicam o campo ou a relação inválida.
+
+Uma receita com referências exige `referenceExists(identity,target,id)` em seus ports de servidor. A ausência do port impede a inicialização. O port recebe a identidade verificada pelo resolvedor; deve consultar a entidade alvo sob a política desse usuário/tenant, e não apenas verificar um ID global. Criação, edição e transição revalidam as referências. A projeção valida o formato persistido, mas não realiza joins nem oferece uma autorização alternativa para ler a entidade referenciada.
+
+A verificação do alvo e a escrita da origem são operações separadas. Referências genéricas não prometem integridade referencial contra exclusão concorrente; use ciclo de vida imutável ou transação própria para essa exigência. O exemplo de [solicitações](REQUEST_JOURNEY.md) evita essa janela entre pai e itens por meio de um agregado atômico.
+
+Adicionar campos obrigatórios exige backfill revisado; alterar escala, moeda, tipo ou alvo de referências exige migração explícita. A evolução existente suporta adicionar esses novos campos e filtros, mas não altera tipos destrutivamente nem cria backfills. As definições antigas sem `rules` continuam válidas. Mudanças no renderer, incluindo a limpeza de UI por conta autenticada, invalidam hashes de árvores geradas antigas: não edite manifests para esconder drift; regenere em checkout separado e migre customizações por revisão.

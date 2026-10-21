@@ -9,7 +9,7 @@ try {
 	await build({
 		stdin: {
 			contents:
-				"import './tests/core.node.test.ts'; import './tests/security-properties.node.test.ts'; import './tests/recipe-security-properties.node.test.ts';",
+				"import './tests/core.node.test.ts'; import './tests/requests.node.test.ts'; import './tests/recipe-domain.node.test.ts'; import './tests/security-properties.node.test.ts'; import './tests/recipe-security-properties.node.test.ts';",
 			resolveDir: process.cwd(),
 			loader: 'ts'
 		},

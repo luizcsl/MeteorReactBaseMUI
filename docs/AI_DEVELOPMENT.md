@@ -21,7 +21,7 @@ The toolkit under `tools/` never runs inside the application. An external harnes
 2. Run doctor. Select an officially supported profile; unsupported capabilities require architectural review, not silent defaults.
 3. Retrieve a bounded context package and inspect its dependency/truncation diagnostics.
 4. Change contract and negative tests before implementation. Identity/roles/tenant/owner are never granted by input fields.
-5. Use the deterministic scaffold for repetitive structure; review the manifest and wire server/UI explicitly.
+5. Use the deterministic scaffold for repetitive structure; review the manifest, supply trusted identity/acceptance ports and use the [integration plan](MODULE_INTEGRATION.md) to wire server/UI/tests.
 6. Implement one vertical slice including interface states. Never ship a stub that claims persistence succeeded.
 7. Run targeted checks while iterating. Run full verify outside the model before acceptance.
 8. Report exact commit, tests, blocked gates and migrations. Publish only within granted authority; deploy/merge is separate.
@@ -35,3 +35,9 @@ Legacy schemas remain for UI compatibility; they are not authorization schemas. 
 ## Qualifications
 
 Read [validation status](AI_READY_VALIDATION.md) for actual executed checks. Tooling tests are not DDP, HTTP, browser, Mongo rollback, distributed-rate-limit, restore or real-model evidence. Passing local checks is not proof that current dependency advisories or external CI pass.
+
+## Architecture selection
+
+Read the nearest `architecture.manifest.json` or generated `module.manifest.json` before editing. `agent:context` now includes architecture classifications and manifest hashes for modules in its dependency closure. `tasks` is the owner CRUD reference; `requests` plus the public `requestitems/contracts` entrypoint demonstrates a [complete approval journey](REQUEST_JOURNEY.md). `example`, `aniversario` and `userprofile` are explicitly legacy compatibility modules. Their ProductBase, publications and offline helpers are not the new-module pattern. Shared compatibility routing is a composition boundary, not permission to import another module's private implementation.
+
+Use [domain contracts](DOMAIN_CONTRACTS.md) for date/money/reference fields and [qualification](BOILERPLATE_QUALIFICATION.md) before accepting an integrated result.

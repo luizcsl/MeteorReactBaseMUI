@@ -5,6 +5,7 @@ const commands = {
 	doctor: {},
 	'module:new': { values: ['--spec'], required: ['--spec'] },
 	'recipe:new': { values: ['--definition'], required: ['--definition'] },
+	'module:integrate': { values: ['--plan', '--apply'], oneOf: ['--plan', '--apply'] },
 	'module:evolve': { values: ['--plan', '--apply', '--recover'], oneOf: ['--plan', '--apply', '--recover'] },
 	'agent:context': { values: ['--task'], required: ['--task'] },
 	'agent:graph': {},

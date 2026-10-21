@@ -12,3 +12,7 @@ if (process.env.TEST_TRANSACTIONS === '1') {
 import './profile-publication.server';
 
 import './recipes.server';
+
+import '../imports/integration/server/tests';
+
+import './requests.server';

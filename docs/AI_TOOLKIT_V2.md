@@ -43,3 +43,7 @@ Use [structural evolution](STRUCTURAL_EVOLUTION.md), [recipe integration](recipe
 Static TypeScript/AST checks do not prove arbitrary dynamic behavior. Controlled mutation tests cover named authorization predicates, not all possible faults. An export-file restore rehearsal does not recover Mongo and private attachment storage together. Mocked browser clients do not prove live DDP integration. A container command builder and blocked preflight do not prove working isolation on a target host.
 
 The [second-stage validation ledger](AI_TOOLKIT_V2_VALIDATION.md) distinguishes executed checks from unavailable infrastructure and application-specific obligations. Benchmark fixtures and controlled mock responses are never reported as real-model productivity results.
+
+## Boilerplate integration and product journeys
+
+Use [module integration](MODULE_INTEGRATION.md) after generation, [domain contracts](DOMAIN_CONTRACTS.md) for dates/money/references/rules, and the [request approval journey](REQUEST_JOURNEY.md) as the cross-module reference. The [qualification workflow](BOILERPLATE_QUALIFICATION.md) detects dependency drift and records source-bound local evidence. Architecture manifests distinguish legacy compatibility modules from core references in bounded AST context. These changes do not modify Synergia Code or the external harness.

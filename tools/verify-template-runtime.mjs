@@ -5,27 +5,60 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { scaffold } from './scaffold.mjs';
+import { planIntegration, applyIntegration } from './integrate.mjs';
 export function prepareRuntimeFixture(root, temporary) {
-  for(const item of ['imports','templates','.meteor','tests','client','server','public','.babel-plugins']) {
-    const source=path.join(root,item);
-    if(fs.existsSync(source)) fs.cpSync(source,path.join(temporary,item),{recursive:true,filter:filename=>!filename.startsWith(path.join(root,'.meteor','local'))});
-  }
-  for(const item of ['package.json','package-lock.json','tsconfig.json','.meteorignore','.babelrc']) if(fs.existsSync(path.join(root,item))) fs.copyFileSync(path.join(root,item),path.join(temporary,item));
-  fs.symlinkSync(path.join(root,'node_modules'),path.join(temporary,'node_modules'),'dir');
-  scaffold(temporary,{schemaVersion:1,templateVersion:'1.0.0',profile:'owner-crud',name:'verificationnotes'});
-  const pkg=JSON.parse(fs.readFileSync(path.join(temporary,'package.json'),'utf8'));
-  pkg.meteor={...pkg.meteor,testModule:{server:'tests/generated.server.ts',client:'tests/generated.client.ts'}};
-  fs.writeFileSync(path.join(temporary,'package.json'),JSON.stringify(pkg,null,2));
-  fs.writeFileSync(path.join(temporary,'tests/generated.client.ts'),'export {};\n');
-  fs.writeFileSync(path.join(temporary,'tests/generated.server.ts'),`/// <reference types="mocha" />
+	for (const item of ['imports', 'templates', '.meteor', 'tests', 'client', 'server', 'public', '.babel-plugins']) {
+		const source = path.join(root, item);
+		if (fs.existsSync(source))
+			fs.cpSync(source, path.join(temporary, item), {
+				recursive: true,
+				filter: (filename) => !filename.startsWith(path.join(root, '.meteor', 'local'))
+			});
+	}
+	for (const item of ['package.json', 'package-lock.json', 'tsconfig.json', '.meteorignore', '.babelrc'])
+		if (fs.existsSync(path.join(root, item))) fs.copyFileSync(path.join(root, item), path.join(temporary, item));
+	fs.symlinkSync(path.join(root, 'node_modules'), path.join(temporary, 'node_modules'), 'dir');
+	scaffold(temporary, { schemaVersion: 1, templateVersion: '1.0.0', profile: 'owner-crud', name: 'verificationnotes' });
+	const custom = path.join(temporary, 'imports/modules/verificationnotes/custom/server');
+	fs.mkdirSync(custom, { recursive: true });
+	fs.writeFileSync(
+		path.join(custom, 'ports.ts'),
+		`import { activeAccountContext } from '../../../../core/server/identity';
+export const context=activeAccountContext(async id=>id==='generated-owner',()=> 'generated-request');
+`
+	);
+	fs.writeFileSync(
+		path.join(custom, 'acceptance.test.ts'),
+		`import assert from 'node:assert/strict';
+import { Meteor } from 'meteor/meteor';
+describe('integrated module public namespace',()=>{it('automatically registers all five public methods',()=>{
+ const handlers=(Meteor as unknown as {server:{method_handlers:Record<string,unknown>}}).server.method_handlers;
+ for(const operation of ['create','get','list','update','remove']) assert.equal(typeof handlers['verificationnotes.'+operation],'function');
+});});
+`
+	);
+	applyIntegration(
+		temporary,
+		planIntegration(temporary, { schemaVersion: 1, module: 'verificationnotes', label: 'Verification notes' })
+	);
+	const pkg = JSON.parse(fs.readFileSync(path.join(temporary, 'package.json'), 'utf8'));
+	pkg.meteor = {
+		...pkg.meteor,
+		testModule: { server: 'tests/generated.server.ts', client: 'tests/generated.client.ts' }
+	};
+	fs.writeFileSync(path.join(temporary, 'package.json'), JSON.stringify(pkg, null, 2));
+	fs.writeFileSync(path.join(temporary, 'tests/generated.client.ts'), 'export {};\n');
+	fs.writeFileSync(
+		path.join(temporary, 'tests/generated.server.ts'),
+		`/// <reference types="mocha" />
 import assert from 'node:assert/strict';
 import { Meteor } from 'meteor/meteor';
 import { DDP } from 'meteor/ddp';
-import { registerVerificationnotes } from '../imports/modules/verificationnotes/server/register';
+import { registerIntegratedModules } from '../imports/integration/server/register';
+import '../imports/integration/server/tests';
 import { activeAccountContext } from '../imports/core/server/identity';
 import { VerificationnotesCollection } from '../imports/modules/verificationnotes/server/repository';
-import '../imports/modules/verificationnotes/tests/policy.test';
-registerVerificationnotes(activeAccountContext(async id => id === 'generated-owner', () => 'generated-request'));
+registerIntegratedModules();
 describe('generated public registration', function () {
   this.timeout(20000);
   after(async () => { await VerificationnotesCollection.removeAsync({ownerId:'generated-owner'}); });
@@ -44,24 +77,45 @@ describe('generated public registration', function () {
     } finally { connection.disconnect(); }
   });
 });
-`);
-  return temporary;
+`
+	);
+	return temporary;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
-  const root=process.cwd(), temporary=fs.mkdtempSync(path.join(os.tmpdir(),'template-meteor-'));
-  try {
-    prepareRuntimeFixture(root,temporary);
-    const env=Object.fromEntries(['PATH','HOME','TMPDIR','USER','LANG','CI','METEOR_ALLOW_SUPERUSER'].filter(key=>process.env[key]).map(key=>[key,process.env[key]]));
-    Object.assign(env,{NODE_ENV:'test',TEST_SERVER_ONLY:'1',ROOT_URL:'http://127.0.0.1:3105'});
-    if(process.env.TEST_MONGO_URL) {
-      const database=new URL(process.env.TEST_MONGO_URL);
-      if(database.protocol!=='mongodb:' || !['127.0.0.1','localhost','[::1]'].includes(database.hostname) || database.username || database.password || !/^\/[a-z0-9_-]*(?:test|fixture)[a-z0-9_-]*$/i.test(database.pathname)) throw new Error('TEST_MONGO_URL must target an unauthenticated loopback test/fixture database');
-      env.MONGO_URL=process.env.TEST_MONGO_URL;
-    }
-    const result=spawnSync('meteor',['test','--once','--driver-package','meteortesting:mocha','--port','3105'],{cwd:temporary,env,encoding:'utf8',timeout:600000,maxBuffer:16*1024*1024});
-    const output=(result.stdout||'')+(result.stderr||''); process.stdout.write(output);
-    if(result.error) throw result.error;
-    if(result.status!==0 || !/\b[1-9]\d* passing\b/.test(output)) throw new Error('Generated Meteor qualification failed or reported zero passing tests');
-    console.log('Generated fixture registered and exercised via real Meteor/Mongo/DDP.');
-  } finally { fs.rmSync(temporary,{recursive:true,force:true}); }
+	const root = process.cwd(),
+		temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'template-meteor-'));
+	try {
+		prepareRuntimeFixture(root, temporary);
+		const env = Object.fromEntries(
+			['PATH', 'HOME', 'TMPDIR', 'USER', 'LANG', 'CI', 'METEOR_ALLOW_SUPERUSER']
+				.filter((key) => process.env[key])
+				.map((key) => [key, process.env[key]])
+		);
+		Object.assign(env, { NODE_ENV: 'test', TEST_SERVER_ONLY: '1', ROOT_URL: 'http://127.0.0.1:3105' });
+		if (process.env.TEST_MONGO_URL) {
+			const database = new URL(process.env.TEST_MONGO_URL);
+			if (
+				database.protocol !== 'mongodb:' ||
+				!['127.0.0.1', 'localhost', '[::1]'].includes(database.hostname) ||
+				database.username ||
+				database.password ||
+				!/^\/[a-z0-9_-]*(?:test|fixture)[a-z0-9_-]*$/i.test(database.pathname)
+			)
+				throw new Error('TEST_MONGO_URL must target an unauthenticated loopback test/fixture database');
+			env.MONGO_URL = process.env.TEST_MONGO_URL;
+		}
+		const result = spawnSync(
+			'meteor',
+			['test', '--once', '--driver-package', 'meteortesting:mocha', '--port', '3105'],
+			{ cwd: temporary, env, encoding: 'utf8', timeout: 600000, maxBuffer: 16 * 1024 * 1024 }
+		);
+		const output = (result.stdout || '') + (result.stderr || '');
+		process.stdout.write(output);
+		if (result.error) throw result.error;
+		if (result.status !== 0 || !/\b[1-9]\d* passing\b/.test(output))
+			throw new Error('Generated Meteor qualification failed or reported zero passing tests');
+		console.log('Generated fixture registered and exercised via real Meteor/Mongo/DDP.');
+	} finally {
+		fs.rmSync(temporary, { recursive: true, force: true });
+	}
 }

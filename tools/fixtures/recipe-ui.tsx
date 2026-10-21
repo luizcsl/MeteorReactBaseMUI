@@ -13,10 +13,42 @@ import {
 type Method = keyof RecipeClient;
 type Call = { id: number; method: Method; args: unknown[]; status: 'pending' | 'resolved' | 'rejected' };
 type Pending = { call: Call; run: () => unknown; resolve: (value: unknown) => void; reject: (error: Error) => void };
-type Options = { profile?: RecipeProfile; rows?: RecipeRow[]; hold?: Method[]; parentId?: string | null };
+type Options = {
+	profile?: RecipeProfile;
+	rows?: RecipeRow[];
+	hold?: Method[];
+	parentId?: string | null;
+	domain?: boolean;
+};
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-function definition(profile: RecipeProfile): RecipeDefinition {
+function definition(profile: RecipeProfile, domain = false): RecipeDefinition {
+	if (domain)
+		return validateDefinition({
+			schemaVersion: 1,
+			name: 'browserrecipes',
+			profile: 'owner',
+			fields: [
+				{ name: 'start', label: 'Start', type: 'date', required: true },
+				{ name: 'end', label: 'End', type: 'date', required: true },
+				{
+					name: 'amount',
+					label: 'Amount',
+					type: 'money',
+					required: true,
+					currency: 'BRL',
+					scale: 2,
+					min: 0,
+					max: 100000000
+				},
+				{ name: 'supplier', label: 'Supplier', type: 'reference', required: true, target: 'suppliers' }
+			],
+			rules: [{ kind: 'lte', left: 'start', right: 'end' }],
+			filters: ['amount', 'start'],
+			states: ['draft'],
+			transitions: [],
+			permissions: { read: ['owner'], write: ['owner'] }
+		});
 	return validateDefinition({
 		schemaVersion: 1,
 		name: 'browserrecipes',
@@ -171,7 +203,7 @@ function Fixture({ options, remote }: { options: Options; remote: ControlledClie
 						</select>
 					</label>
 				)}
-				<RecipePage definition={definition(profile)} client={remote.client} parentId={parentId} />
+				<RecipePage definition={definition(profile, options.domain)} client={remote.client} parentId={parentId} />
 			</Box>
 		</ThemeProvider>
 	);

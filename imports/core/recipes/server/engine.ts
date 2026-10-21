@@ -52,6 +52,8 @@ export interface RecipePorts {
 	repository: RecipeRepository;
 	resolveIdentity: (userId: string) => Promise<RecipeIdentity>;
 	parentExists?: (scope: RecipeScope, id: string) => Promise<boolean>;
+	/** Must scope the target to this verified identity, never just test its existence. */
+	referenceExists?: (identity: RecipeIdentity, target: string, id: string) => Promise<boolean>;
 }
 const validId = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(v);
 const input = (v: unknown, keys: string[]): Record<string, unknown> => {
@@ -75,6 +77,15 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 	const d = validateDefinition(raw);
 	if (d.profile === 'master-detail' && !ports.parentExists)
 		throw new Error('Master/detail requires a scoped parent repository');
+	if (d.fields.some((f) => f.type === 'reference') && !ports.referenceExists)
+		throw new Error('References require a scoped referenceExists port');
+	async function references(who: RecipeIdentity, data: RecipeData) {
+		for (const field of d.fields.filter((f) => f.type === 'reference')) {
+			const id = data[field.name];
+			if (id !== null && !(await ports.referenceExists!(who, field.target!, id as string)))
+				throw new OperationError('not-found');
+		}
+	}
 	async function identity(userId: string | null): Promise<RecipeIdentity> {
 		if (!userId) throw new OperationError('unauthenticated');
 		const who = await ports.resolveIdentity(userId);
@@ -164,6 +175,7 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			const who = await identity(userId);
 			scope(who, d.permissions.write);
 			const data = parseRecipeData(d, v.data);
+			await references(who, data);
 			if (d.profile === 'master-detail') {
 				if (!validId(v.parentId) || !(await ports.parentExists!(scope(who, ['owner']), v.parentId)))
 					throw new OperationError('not-found');
@@ -200,6 +212,7 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			if (row.version !== version(v.version)) throw new OperationError('conflict');
 			if (d.profile === 'approval' && row.state !== d.states[0]) throw new OperationError('forbidden');
 			const data = parseRecipeData(d, v.data);
+			await references(who, data);
 			if (
 				!(await ports.repository.compareAndSet(s, row._id, row.version, {
 					data,
@@ -215,6 +228,7 @@ export function recipeService(raw: RecipeDefinition, ports: RecipePorts) {
 			const who = await identity(userId);
 			const { s, row } = await get(who, v.id, d.permissions.read);
 			if (row.version !== version(v.version)) throw new OperationError('conflict');
+			await references(who, row.data);
 			const t = d.transitions.find((t) => t.from === row.state && t.to === v.to);
 			if (!t) throw new OperationError('invalid-input');
 			const permitted = t.roles.some((r) =>

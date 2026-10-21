@@ -8,6 +8,8 @@ Docker e ferramentas de qualidade.
 
 Leia [AI Development](docs/AI_DEVELOPMENT.md), [contrato do harness Synergia Code](docs/HARNESS_SYNERGIA.md), [migração](docs/MIGRATION_AI_READY.md) e [evidências de validação](docs/AI_READY_VALIDATION.md). O caminho novo usa contratos executáveis, CRUD de referência e ferramentas determinísticas; não exige LLM em runtime. A [segunda camada de ferramentas](docs/AI_TOOLKIT_V2.md) acrescenta análise AST, evolução estrutural, arquétipos, UI derivada de contratos, testes de mutação e um executor externo com bloqueio seguro quando não há isolamento.
 
+A evolução do boilerplate inclui [integração automática por plano](docs/MODULE_INTEGRATION.md), [datas, dinheiro e referências](docs/DOMAIN_CONTRACTS.md), uma [jornada completa de solicitações](docs/REQUEST_JOURNEY.md) e [qualificação reproduzível](docs/BOILERPLATE_QUALIFICATION.md). Os manifests distinguem explicitamente módulos legados e novos.
+
 ## Stack atual
 
 - Meteor 3.5.2 com Node.js 24.15 no build e no runtime Docker;

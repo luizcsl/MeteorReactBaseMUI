@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Alert, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
-import { initialRecipeData, parseRecipeData, type RecipeData, type RecipeDefinition } from '../recipes/definition';
+import {
+	formatMoney,
+	parseMoneyText,
+	initialRecipeData,
+	parseRecipeData,
+	type RecipeData,
+	type RecipeDefinition
+} from '../recipes/definition';
 export interface RecipeFormProps {
 	definition: RecipeDefinition;
 	initial?: RecipeData;
@@ -18,7 +25,11 @@ export function RecipeForm({ definition, initial, disabled = false, onSubmit }: 
 		setPending(true);
 		setError('');
 		try {
-			await onSubmit(parseRecipeData(definition, data));
+			const normalized = { ...data };
+			for (const field of definition.fields)
+				if (field.type === 'money' && typeof normalized[field.name] === 'string')
+					normalized[field.name] = parseMoneyText(normalized[field.name] as string, field.scale!);
+			await onSubmit(parseRecipeData(definition, normalized));
 		} catch {
 			setError('Unable to save. Check the fields and your permission, then retry.');
 		} finally {
@@ -52,11 +63,24 @@ export function RecipeForm({ definition, initial, disabled = false, onSubmit }: 
 							label={field.label}
 							required={field.required}
 							disabled={disabled || pending}
-							value={data[field.name] ?? ''}
-							type={field.type === 'integer' ? 'number' : 'text'}
+							value={
+								field.type === 'money' && typeof data[field.name] === 'number'
+									? formatMoney(data[field.name] as number, field.scale!)
+									: (data[field.name] ?? '')
+							}
+							type={field.type === 'date' ? 'date' : field.type === 'integer' ? 'number' : 'text'}
+							helperText={
+								field.type === 'money'
+									? `${field.currency} (${field.scale} casas decimais)`
+									: field.type === 'reference'
+										? `ID: ${field.target}`
+										: undefined
+							}
 							select={field.type === 'enum'}
 							slotProps={{
+								inputLabel: field.type === 'date' ? { shrink: true } : undefined,
 								htmlInput: {
+									inputMode: field.type === 'money' ? 'decimal' : undefined,
 									maxLength: field.maxLength,
 									min: field.min,
 									max: field.max,

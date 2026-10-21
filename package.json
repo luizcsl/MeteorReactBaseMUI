@@ -32,7 +32,7 @@
     "test:toolkit": "node --test tools/test/*.test.mjs evals/*.test.mjs tools/harness/container-fixtures/meteor/*.test.mjs",
     "test:security": "TEST_SERVER_ONLY=1 meteor test --once --driver-package meteortesting:mocha --port 3102",
     "verify": "npm run typecheck && npm run test:core && npm run test:mutations && npm run test:toolkit && npm run boundaries:check && npm run templates:verify && npm run docs:verify && npm run test:security",
-    "verify:release": "npm run verify && npm run test:migrations && npm run test:transactions && npm run templates:runtime && npm run test:browser && npm run test:recipe-ui && meteor build /tmp/meteor-release-build --directory",
+    "verify:release": "npm run verify && npm run test:migrations && npm run test:transactions && npm run templates:runtime && npm run test:browser && npm run test:recipe-ui && npm run test:request-journey && meteor build /tmp/meteor-release-build --directory",
     "test:core": "node tools/run-core-tests.mjs",
     "eval:agents": "node evals/report.mjs",
     "templates:runtime": "node tools/verify-template-runtime.mjs",
@@ -47,7 +47,10 @@
     "eval:run": "node tools/harness/benchmark.mjs",
     "test:recipe-ui": "node tools/verify-recipe-ui.mjs",
     "test:migrations": "node tools/verify-mongo-migrations.mjs",
-    "test:harness": "node tools/verify-container-harness.mjs"
+    "test:harness": "node tools/verify-container-harness.mjs",
+    "module:integrate": "node tools/cli.mjs module:integrate",
+    "test:request-journey": "node tools/verify-request-journey.mjs",
+    "qualify": "node tools/qualify.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -125,5 +128,6 @@
     "node": ">=24 <25",
     "npm": ">=11 <13"
   },
-  "version": "0.1.0-ai-ready.1"
+  "version": "0.1.0-ai-ready.1",
+  "packageManager": "npm@11.11.0"
 }

@@ -1,0 +1,8 @@
+{
+	"schemaVersion": 1,
+	"name": "requests",
+	"architecture": "core-v1",
+	"reference": true,
+	"publicContracts": ["contracts/index.ts"],
+	"guidance": "Bounded cross-module approval journey. Read README and docs/REQUEST_JOURNEY.md before extending; items/history share atomic aggregate CAS."
+}

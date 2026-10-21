@@ -1,0 +1,8 @@
+{
+	"schemaVersion": 1,
+	"name": "userprofile",
+	"architecture": "legacy",
+	"reference": false,
+	"publicContracts": [],
+	"guidance": "Legacy identity/profile bridge. Do not infer authority from profile UI fields or copy its architecture into new modules."
+}

@@ -21,7 +21,7 @@ if (Meteor.isServer)
 			transitions: [{ from: 'draft', to: 'submitted', roles: ['owner'] }],
 			permissions: { read: ['owner'], write: ['owner'] }
 		};
-		const names = ['recipeddptest', 'recipeteamtest', 'recipeapprovaltest', 'recipechildtest'];
+		const names = ['recipeddptest', 'recipeteamtest', 'recipeapprovaltest', 'recipechildtest', 'recipedomaintest'];
 		const identities = new Map<string, RecipeIdentity>();
 		const connections: Record<string, any> = {};
 		const ids: Record<string, string> = {};
@@ -62,6 +62,39 @@ if (Meteor.isServer)
 				{
 					resolveIdentity: resolver,
 					parentExists: async (scope, id) => parents.has(`${scope.ownerId}:${scope.tenantId}:${id}`)
+				}
+			);
+			registerRecipe(
+				{
+					...base,
+					name: names[4],
+					fields: [
+						{ name: 'start', label: 'Start', type: 'date', required: true },
+						{ name: 'end', label: 'End', type: 'date', required: true },
+						{
+							name: 'amount',
+							label: 'Amount',
+							type: 'money',
+							required: true,
+							currency: 'BRL',
+							scale: 2,
+							min: 0,
+							max: 100000
+						},
+						{ name: 'supplier', label: 'Supplier', type: 'reference', required: true, target: base.name }
+					],
+					filters: ['start', 'amount'],
+					rules: [{ kind: 'lte', left: 'start', right: 'end' }]
+				},
+				{
+					resolveIdentity: resolver,
+					referenceExists: async (who, target, id) =>
+						target === base.name &&
+						Boolean(
+							await database
+								.collection('recipe_' + base.name)
+								.findOne({ _id: id, ownerId: who.userId, tenantId: who.tenantId, deleted: false } as any)
+						)
 				}
 			);
 			for (const name of names) await database.collection(`recipe_${name}`).deleteMany({});
@@ -229,5 +262,28 @@ if (Meteor.isServer)
 			await assert.rejects(call('alice', names[3], 'list', { filters: {}, limit: 10, parentId: 'parent1' }), {
 				error: 'not-found'
 			});
+		});
+		it('validates civil dates, exact money, cross-field rules and live scoped references over DDP', async () => {
+			const supplier = await call('alice', names[0], 'create', {
+				mutationId: 'domain-supplier',
+				data: { title: 'Supplier' },
+				parentId: null
+			});
+			const data = { start: '2024-02-29', end: '2024-03-01', amount: 1010, supplier: supplier.id };
+			const input = { mutationId: 'domain', data, parentId: null };
+			for (const change of [{ start: '2023-02-29' }, { end: '2024-01-01' }, { amount: 10.1 }, { amount: '10.10' }])
+				await assert.rejects(call('alice', names[4], 'create', { ...input, data: { ...data, ...change } }), {
+					error: 'invalid-input'
+				});
+			await assert.rejects(call('bob', names[4], 'create', input), { error: 'not-found' });
+			const row = await call('alice', names[4], 'create', input);
+			assert.deepEqual(row.data, data);
+			assert.equal(
+				(await call('alice', names[4], 'list', { filters: { amount: 1010, start: '2024-02-29' }, limit: 10 })).length,
+				1
+			);
+			await call('alice', names[0], 'remove', { id: supplier.id, version: 1 });
+			await assert.rejects(call('alice', names[4], 'update', { id: row.id, version: 1, data }), { error: 'not-found' });
+			assert.equal((await database.collection('recipe_' + names[4]).findOne({ _id: row.id } as any))?.version, 1);
 		});
 	});

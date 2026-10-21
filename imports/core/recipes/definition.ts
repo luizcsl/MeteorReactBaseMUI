@@ -4,18 +4,22 @@ export type Access = 'owner' | 'member' | 'reviewer';
 export interface RecipeField {
 	name: string;
 	label: string;
-	type: 'string' | 'integer' | 'boolean' | 'enum';
+	type: 'string' | 'integer' | 'boolean' | 'enum' | 'date' | 'money' | 'reference';
 	required: boolean;
 	maxLength?: number;
 	min?: number;
 	max?: number;
 	values?: string[];
+	currency?: string;
+	scale?: number;
+	target?: string;
 }
 export interface RecipeDefinition {
 	schemaVersion: 1;
 	name: string;
 	profile: RecipeProfile;
 	fields: RecipeField[];
+	rules?: { kind: 'lte'; left: string; right: string }[];
 	filters: string[];
 	states: string[];
 	transitions: { from: string; to: string; roles: string[] }[];
@@ -75,16 +79,11 @@ const strings = (value: unknown, max: number): value is string[] =>
 	value.every((x) => typeof x === 'string' && x.length > 0 && x.length <= 80) &&
 	new Set(value).size === value.length;
 export function validateDefinition(value: unknown): RecipeDefinition {
-	const d = exact(value, [
-		'schemaVersion',
-		'name',
-		'profile',
-		'fields',
-		'filters',
-		'states',
-		'transitions',
-		'permissions'
-	]);
+	const d = exact(
+		value,
+		['schemaVersion', 'name', 'profile', 'fields', 'filters', 'states', 'transitions', 'permissions', 'rules'],
+		['schemaVersion', 'name', 'profile', 'fields', 'filters', 'states', 'transitions', 'permissions']
+	);
 	if (
 		d.schemaVersion !== 1 ||
 		!identifier(d.name) ||
@@ -98,7 +97,7 @@ export function validateDefinition(value: unknown): RecipeDefinition {
 	for (const raw of d.fields) {
 		const f = exact(
 			raw,
-			['name', 'label', 'type', 'required', 'maxLength', 'min', 'max', 'values'],
+			['name', 'label', 'type', 'required', 'maxLength', 'min', 'max', 'values', 'currency', 'scale', 'target'],
 			['name', 'label', 'type', 'required']
 		);
 		if (
@@ -111,6 +110,23 @@ export function validateDefinition(value: unknown): RecipeDefinition {
 		)
 			return bad('Invalid field');
 		names.add(f.name);
+		const allowedOptions: Record<string, string[]> = {
+			string: ['maxLength'],
+			integer: ['min', 'max'],
+			boolean: [],
+			enum: ['values'],
+			date: [],
+			money: ['min', 'max', 'currency', 'scale'],
+			reference: ['target']
+		};
+		if (
+			typeof f.type !== 'string' ||
+			!Object.hasOwn(allowedOptions, f.type) ||
+			['maxLength', 'min', 'max', 'values', 'currency', 'scale', 'target'].some(
+				(k) => Object.hasOwn(f, k) && !allowedOptions[f.type as string].includes(k)
+			)
+		)
+			return bad(`Invalid options for field: ${f.name}`);
 		if (f.type === 'string') {
 			if (
 				!Number.isSafeInteger(f.maxLength) ||
@@ -121,7 +137,16 @@ export function validateDefinition(value: unknown): RecipeDefinition {
 				Object.hasOwn(f, 'values')
 			)
 				return bad('String requires bounded maxLength');
-		} else if (f.type === 'integer') {
+		} else if (f.type === 'integer' || f.type === 'money') {
+			if (
+				f.type === 'money' &&
+				(typeof f.currency !== 'string' ||
+					!/^[A-Z]{3}$/.test(f.currency) ||
+					!Number.isSafeInteger(f.scale) ||
+					Number(f.scale) < 0 ||
+					Number(f.scale) > 4)
+			)
+				return bad(`Invalid money metadata: ${f.name}`);
 			if (
 				!Number.isSafeInteger(f.min) ||
 				!Number.isSafeInteger(f.max) ||
@@ -142,7 +167,10 @@ export function validateDefinition(value: unknown): RecipeDefinition {
 		} else if (f.type === 'boolean') {
 			if (['min', 'max', 'maxLength', 'values'].some((k) => Object.hasOwn(f, k)))
 				return bad('Boolean options unsupported');
-		} else return bad('Unsupported field type');
+		} else if (f.type === 'reference') {
+			if (typeof f.target !== 'string' || !/^[a-z][a-z0-9]{2,31}$/.test(f.target))
+				return bad(`Invalid reference target: ${f.name}`);
+		} else if (f.type !== 'date') return bad('Unsupported field type');
 	}
 	if (
 		!strings(d.filters, 10) ||
@@ -186,6 +214,28 @@ export function validateDefinition(value: unknown): RecipeDefinition {
 		)
 			return bad('Owner profile cannot grant team access');
 	}
+	if (d.rules !== undefined) {
+		if (!isPlainDenseArray(d.rules, 20)) return bad('Expected at most 20 rules');
+		const seen = new Set<string>();
+		for (const raw of d.rules) {
+			const rule = exact(raw, ['kind', 'left', 'right']);
+			const left = (d.fields as RecipeField[]).find((f) => f.name === rule.left);
+			const right = (d.fields as RecipeField[]).find((f) => f.name === rule.right);
+			const key = `${rule.left}:${rule.right}`;
+			if (
+				rule.kind !== 'lte' ||
+				!left ||
+				!right ||
+				left === right ||
+				left.type !== right.type ||
+				!['integer', 'money', 'date'].includes(left.type) ||
+				(left.type === 'money' && (left.currency !== right.currency || left.scale !== right.scale)) ||
+				seen.has(key)
+			)
+				return bad('Invalid cross-field rule');
+			seen.add(key);
+		}
+	}
 	// A detached JSON copy prevents later mutation of the accepted input object.
 	return JSON.parse(JSON.stringify(d)) as RecipeDefinition;
 }
@@ -210,16 +260,24 @@ export function parseRecipeData(definition: RecipeDefinition, value: unknown): R
 		)
 			output[f.name] = value;
 		else if (
-			f.type === 'integer' &&
+			(f.type === 'integer' || f.type === 'money') &&
 			typeof value === 'number' &&
 			Number.isSafeInteger(value) &&
 			value >= f.min! &&
 			value <= f.max!
 		)
 			output[f.name] = value;
+		else if (f.type === 'date' && isRecipeDate(value)) output[f.name] = value;
+		else if (f.type === 'reference' && typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value))
+			output[f.name] = value;
 		else if (f.type === 'boolean' && typeof value === 'boolean') output[f.name] = value;
 		else if (f.type === 'enum' && typeof value === 'string' && f.values!.includes(value)) output[f.name] = value;
 		else bad(`Invalid field: ${f.name}`);
+	}
+	for (const rule of d.rules ?? []) {
+		const left = output[rule.left],
+			right = output[rule.right];
+		if (left !== null && right !== null && left > right) bad(`Rule failed: ${rule.left} <= ${rule.right}`);
 	}
 	return output;
 }
@@ -231,6 +289,7 @@ export function parseRecipeFilters(definition: RecipeDefinition, value: unknown)
 		const one = {
 			...definition,
 			fields: [field],
+			rules: [],
 			filters: [],
 			transitions: [],
 			permissions: { read: ['owner'], write: ['owner'] },
@@ -248,10 +307,41 @@ export const initialRecipeData = (d: RecipeDefinition): RecipeData =>
 				? null
 				: f.type === 'boolean'
 					? false
-					: f.type === 'integer'
+					: f.type === 'integer' || f.type === 'money'
 						? f.min!
 						: f.type === 'enum'
 							? f.values![0]
 							: ''
 		])
 	);
+
+/** Civil dates stay ISO strings across JSON/DDP/Mongo; no timezone conversion. */
+export function isRecipeDate(value: unknown): value is string {
+	if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '0001-01-01') return false;
+	const date = new Date(value + 'T00:00:00.000Z');
+	return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+/** Convert decimal text to exact integer minor units, without floating point rounding. */
+export function parseMoneyText(value: string, scale: number): number {
+	if (
+		!Number.isInteger(scale) ||
+		scale < 0 ||
+		scale > 4 ||
+		value.length > 24 ||
+		!/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)
+	)
+		return bad('Invalid money');
+	const [whole, fraction = ''] = value.replace('-', '').split('.');
+	if (fraction.length > scale) return bad('Too many decimal places');
+	const amount = BigInt(whole + fraction.padEnd(scale, '0')) * (value.startsWith('-') ? -1n : 1n);
+	const number = Number(amount);
+	if (!Number.isSafeInteger(number)) return bad('Money outside safe integer range');
+	return number;
+}
+export function formatMoney(value: number, scale: number): string {
+	if (!Number.isSafeInteger(value) || !Number.isInteger(scale) || scale < 0 || scale > 4) return bad('Invalid money');
+	const digits = BigInt(value < 0 ? -value : value)
+		.toString()
+		.padStart(scale + 1, '0');
+	return (value < 0 ? '-' : '') + (scale ? digits.slice(0, -scale) + '.' + digits.slice(-scale) : digits);
+}

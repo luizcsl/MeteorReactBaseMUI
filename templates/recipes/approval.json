@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"name": "requests",
+	"name": "approvalrequests",
 	"profile": "approval",
 	"fields": [
 		{ "name": "title", "label": "Title", "type": "string", "required": true, "maxLength": 160 },

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24.19.0'
+          node-version-file: .nvmrc
           cache: npm
       - name: Install locked dependencies and browser
         run: npm ci
@@ -63,6 +63,8 @@ jobs:
           fi
           node tools/check-browser-bundle.mjs .meteor/local/build/programs/web.browser
           npm run test:browser
+      - name: Qualify complete request approval journey against disposable app and Mongo
+        run: npm run test:request-journey
       - name: Preserve qualification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -71,6 +73,7 @@ jobs:
           path: |
             .ai-artifacts/browser-app.log
             .ai-artifacts/recipe-ui.json
+            .ai-artifacts/request-journey.json
             .cypress/screenshots
           if-no-files-found: warn
           retention-days: 7

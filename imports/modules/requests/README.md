@@ -1,0 +1,5 @@
+# Requests → items → approval → history
+
+Architecture: core-v1; public entrypoint `contracts/index.ts`; server composition `server/register.ts`; authenticated route `/requests`.
+The Requests aggregate consumes the public Request Items contract. Up to 30 items, state and up to 200 history entries are stored in one Mongo document. Every edit, item insertion and decision uses one version-conditioned write, including the history entry, avoiding parent/child lifecycle races. This example deliberately uses bounded embedded items rather than claiming cross-collection transactions.
+Only the owner changes drafts or submits; only the assigned, separate, currently authorized reviewer decides. A private, server-managed assignment maps requester account IDs to reviewers. Accounts and active profiles are rechecked per invocation. No profile role or client field grants reviewer status. Deployments must provision assignments through trusted administration; there is no public assignment mutation or default reviewer. See `docs/REQUEST_JOURNEY.md`.

@@ -7,6 +7,7 @@ import { parseArguments } from './arguments.mjs';
 import { scaffold } from './scaffold.mjs';
 import { context } from './context.mjs';
 import { astGraph } from './ast.mjs';
+import { planIntegration, applyIntegration } from './integrate.mjs';
 import { createRecipe } from './recipes.mjs';
 import { planEvolution, applyEvolution, recoverEvolution } from './evolve.mjs';
 import { migrateFile, rehearseRestore } from './migrations/runner.mjs';
@@ -37,6 +38,12 @@ try {
 				example: readJson(path.join(root, 'templates/owner-crud/example.spec.json')),
 				note: 'Owner-only title/status CRUD. Atomic directory install, collision rejection, idempotent rerun. Register server/UI/tests explicitly from generated manifest; qualified=false until independent tests pass.'
 			},
+			'module:integrate': {
+				command: 'npm run module:integrate -- --plan integration.json (or --apply reviewed-plan.json)',
+				schema: 'tools/schemas/module-integration.v1.schema.json',
+				example: { schemaVersion: 1, module: 'ownednotes', label: 'Minhas notas' },
+				note: 'Supply reviewed custom/server/ports.ts and acceptance.test.ts first. Plans include complete diffs and hashes; apply wires server/routes/menu/tests but preserves qualified=false.'
+			},
 			'agent:context': {
 				command: 'npm run agent:context -- --task tools/task.example.json',
 				schema: 'tools/schemas/task.v1.schema.json',
@@ -65,6 +72,7 @@ try {
 						'check:changed',
 						'recipe:new',
 						'module:evolve',
+						'module:integrate',
 						'agent:graph',
 						'migration:export',
 						'migration:restore-rehearsal'
@@ -87,6 +95,11 @@ try {
 			break;
 		case 'recipe:new':
 			result = createRecipe(root, readJson(option('--definition')));
+			break;
+		case 'module:integrate':
+			result = options.has('--apply')
+				? applyIntegration(root, readJson(option('--apply')))
+				: planIntegration(root, readJson(option('--plan')));
 			break;
 		case 'module:evolve':
 			result = args.includes('--recover')

@@ -105,10 +105,13 @@ export function doctor(root) {
 		status: meteor.status === 0 ? 'passed' : 'failed',
 		message: meteor.status === 0 ? 'Meteor executable available' : 'Meteor executable missing or not responsive'
 	});
+	checks.push(dependencyCheck(root));
+	const expectedMeteor = fs.readFileSync(path.join(root, '.meteor/release'), 'utf8').trim();
+	const actualMeteor = (meteor.stdout || '').trim().replace(/^Meteor /, 'METEOR@');
 	checks.push({
-		name: 'dependencies',
-		status: fs.existsSync(path.join(root, 'node_modules/typescript')) ? 'passed' : 'failed',
-		message: 'Local TypeScript dependency installation'
+		name: 'meteor-release',
+		status: actualMeteor === expectedMeteor ? 'passed' : 'failed',
+		message: `Required ${expectedMeteor}; ${actualMeteor || 'unavailable'}`
 	});
 	checks.push({
 		name: 'mongo-config',
@@ -187,4 +190,33 @@ export function saveTaskState(root, task, evidence) {
 		fs.rmSync(lock, { force: true });
 		fs.rmSync(temporary, { force: true });
 	}
+}
+
+export function dependencyCheck(root) {
+	const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+	const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+	const drift = [];
+	for (const section of ['dependencies', 'devDependencies']) {
+		if (
+			JSON.stringify(Object.entries(pkg[section] || {}).sort()) !==
+			JSON.stringify(Object.entries(lock.packages?.['']?.[section] || {}).sort())
+		)
+			drift.push(`${section}: manifest/lock mismatch`);
+		for (const name of Object.keys(pkg[section] || {})) {
+			const expected = lock.packages?.[`node_modules/${name}`]?.version;
+			let installed;
+			try {
+				installed = JSON.parse(fs.readFileSync(path.join(root, 'node_modules', name, 'package.json'), 'utf8')).version;
+			} catch {
+				/* diagnosed below */
+			}
+			if (!expected || installed !== expected)
+				drift.push(`${name}: installed ${installed || 'missing'}, lock ${expected || 'missing'}`);
+		}
+	}
+	return {
+		name: 'dependencies',
+		status: drift.length ? 'failed' : 'passed',
+		message: drift.length ? drift.join('; ') : 'Direct dependencies match the committed lockfile'
+	};
 }
