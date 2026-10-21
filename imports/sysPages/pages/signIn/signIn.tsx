@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import SignInStyles from './signInStyles';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import SysTextField from '../../../ui/components/sysFormFields/sysTextField/sysTextField';
 import SysForm from '../../../ui/components/sysForm/sysForm';
 import SysFormButton from '../../../ui/components/sysFormFields/sysFormButton/sysFormButton';

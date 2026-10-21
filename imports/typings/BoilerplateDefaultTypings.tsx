@@ -1,7 +1,7 @@
 import { Theme } from '@mui/material';
 import { Meteor } from 'meteor/meteor';
 import { ISortProperties } from './IFilterProperties';
-import { Location, NavigateFunction } from 'react-router-dom';
+import { Location, NavigateFunction } from 'react-router';
 import { IUserProfile } from '../modules/userprofile/api/userProfileSch';
 
 export interface ISysGeneralComponentsCommon {

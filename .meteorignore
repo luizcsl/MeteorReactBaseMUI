@@ -4,3 +4,5 @@ cypress.config.ts
 melhorias.md
 scripts/
 jatai-web/
+
+cypress*.config.ts

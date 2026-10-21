@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext } from 'react';
 import ExampleDetailView from './exampleDetailView';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ExampleModuleContext } from '../../exampleContainer';
 import { useTracker } from 'meteor/react-meteor-data';
 import { exampleApi } from '../../api/exampleApi';

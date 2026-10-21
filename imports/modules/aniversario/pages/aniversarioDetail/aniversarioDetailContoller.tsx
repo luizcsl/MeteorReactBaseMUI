@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext } from 'react';
 import AniversarioDetailView from './aniversarioDetailView';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AniversarioModuleContext } from '../../aniversarioContainer';
 import { useTracker } from 'meteor/react-meteor-data';
 import { aniversarioApi } from '../../api/aniversarioApi';

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import ExampleListView from './exampleListView';
 import { nanoid } from 'nanoid';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTracker } from 'meteor/react-meteor-data';
 import { ISchema } from '../../../../typings/ISchema';
 import { IExample } from '../../api/exampleSch';

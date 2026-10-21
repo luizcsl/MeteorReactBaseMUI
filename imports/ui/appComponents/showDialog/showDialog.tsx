@@ -9,7 +9,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { DialogContentStyled, DialogTitleStyled } from './showDialogStyles';
 import { DialogTransitions } from '../transitions';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRouterSwitch } from '/imports/app/routes/appRouterSwitch';
 
 export interface IShowDialogProps extends ISysGeneralComponentsCommon, Omit<DialogProps, 'open'> {

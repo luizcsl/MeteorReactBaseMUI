@@ -1,6 +1,6 @@
 import React from 'react';
 import { IDefaultContainerProps } from '../../typings/BoilerplateDefaultTypings';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import ExampleListController from '../../modules/example/pages/exampleList/exampleListController';
 import ExampleDetailController from '../../modules/example/pages/exampleDetail/exampleDetailContoller';
 

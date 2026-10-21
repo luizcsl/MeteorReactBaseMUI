@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import AniversarioListView from './aniversarioListView';
 import { nanoid } from 'nanoid';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTracker } from 'meteor/react-meteor-data';
 import { ISchema } from '/imports/typings/ISchema';
 import { IAniversario } from '../../api/aniversarioSch';

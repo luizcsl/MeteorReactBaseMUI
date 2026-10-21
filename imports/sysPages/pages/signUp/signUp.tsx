@@ -4,7 +4,7 @@
 // login page overrides the form’s submit event and call Meteor’s loginWithPassword()
 // Authentication errors modify the component’s state to be displayed
 import React from 'react';
-import { Link, NavigateFunction } from 'react-router-dom';
+import { Link, NavigateFunction } from 'react-router';
 import Container from '@mui/material/Container';
 import TextField from '/imports/ui/components/SimpleFormFields/TextField/TextField';
 import Button from '@mui/material/Button';

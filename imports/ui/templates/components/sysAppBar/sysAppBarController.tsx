@@ -1,6 +1,6 @@
 import React, { ReactNode, useCallback, useContext, useRef } from 'react';
 import Context, { ISysAppBarContext } from './sysAppBarContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import SysAppBarView from './sysAppBarView';
 import AuthContext from '/imports/app/authProvider/authContext';
 import AppLayoutContext from '/imports/app/appLayoutProvider/appLayoutContext';
@@ -27,7 +27,7 @@ const SysAppBar: React.FC<ISysAppBarController> = ({
     const menuPerfilRef = useRef<ISysMenuRef>(null);
     const menuMobileRef = useRef<ISysMenuRef>(null);
 
-    const onClickLogo = useCallback((): void => navigate('/'), [navigate]);
+    const onClickLogo = useCallback((): void => { void navigate('/'); }, [navigate]);
     
     const onLogout = useCallback(async (): Promise<void> => { 
         logout(() => navigate('/'));

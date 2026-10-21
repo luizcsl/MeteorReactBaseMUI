@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { TemplateAppBar } from './templateAppBar/templateAppBar';
 import TemplateNone from './templateNone/templateNone';
 import { IAppMenu } from '../../modules/modulesTypings';
-import { NavigateFunction } from 'react-router-dom';
+import { NavigateFunction } from 'react-router';
 
 //important: A definição do template default da aplicação é feita no aquivo /imports/app/appLayout.tsx
 

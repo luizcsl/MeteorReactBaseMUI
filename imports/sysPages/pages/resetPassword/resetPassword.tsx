@@ -5,7 +5,7 @@ import { Accounts } from 'meteor/accounts-base';
 import TextField from '../../../ui/components/SimpleFormFields/TextField/TextField';
 import Button from '@mui/material/Button';
 import SimpleForm from '/imports/ui/components/SimpleForm/SimpleForm';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { IDefaultContainerProps } from '/imports/typings/BoilerplateDefaultTypings';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';

@@ -13,7 +13,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 import SignInStyles from '../signIn/signInStyles';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { sysSizing } from '/imports/ui/materialui/styles';
 import SysIcon from '/imports/ui/components/sysIcon/sysIcon';
 import AppLayoutContext from '/imports/app/appLayoutProvider/appLayoutContext';
