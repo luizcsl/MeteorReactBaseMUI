@@ -12,8 +12,8 @@ export function syntheticCredentials() {
 export function loginWithForm() {
   const { email, password } = syntheticCredentials();
   cy.visit('/signin');
-  cy.get('input[name="email"]').type(email);
-  cy.get('input[name="password"]').type(password, { log: false });
+  cy.get('input[name="email"]').clear().type(email);
+  cy.get('input[name="password"]').clear({ log: false }).type(password, { log: false });
   cy.contains('button', /^Entrar$/).click();
   cy.window().should(win => expect(win.Meteor.userId(), 'authenticated account').to.be.a('string'));
   // Wait for active profile subscription, not merely the login callback.

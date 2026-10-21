@@ -7,7 +7,7 @@ export const signInSchema: ISchema<ISignIn> = {
 		type: 'String',
 		label: 'Email',
 		optional: false,
-		defaultValue: 'admin@mrb.com',
+		defaultValue: '',
 		validationFunction: (value: string) => {
 			if (!value) return undefined;
 			const email = validarEmail(value);
@@ -19,7 +19,7 @@ export const signInSchema: ISchema<ISignIn> = {
 		type: 'String',
 		label: 'Senha',
 		optional: false,
-		defaultValue: 'admin@mrb.com'
+		defaultValue: ''
 	}
 };
 

@@ -8,3 +8,5 @@ if (process.env.TEST_TRANSACTIONS === '1') {
 } else {
   console.info('Transaction port: NOT QUALIFIED in this run. Use npm run test:transactions against a replica set.');
 }
+
+import "./profile-publication.server";

@@ -185,11 +185,13 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 			});
 			if (!profile || profile.status === 'disabled') return this.ready();
 
-			return self.defaultCollectionPublication(
-				{ _id: profile._id },
+			// Dedicated server-owned identity projection. accountId is intentionally not
+			// part of the editable schema or generic client query allowlist.
+			return self.collectionInstance.find(
+				{ _id: profile._id, accountId: this.userId, status: 'active' },
 				{
 					limit: 1,
-					projection: {
+					fields: {
 						accountId: 1,
 						photo: 1,
 						username: 1,

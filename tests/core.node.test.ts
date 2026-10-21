@@ -102,3 +102,5 @@ test('create mutation replay is concurrent-safe, payload-bound, owner-bound and 
   assert.deepEqual(await f.call(f.operations.list, 'alice', { after: null, limit: 10 }), { items: [], next: null });
   assert.equal(f.rows.size, 2);
 });
+
+import "./form-login.node.test";

@@ -18,8 +18,8 @@ describe('authentication and profile security through the browser', () => {
   it('shows invalid-credential feedback without creating a session', () => {
     const { email } = syntheticCredentials();
     cy.visit('/signin');
-    cy.get('input[name="email"]').type(email);
-    cy.get('input[name="password"]').type('Synthetic-wrong-password-2026', { log: false });
+    cy.get('input[name="email"]').clear().type(email);
+    cy.get('input[name="password"]').clear({ log: false }).type('Synthetic-wrong-password-2026', { log: false });
     cy.contains('button', /^Entrar$/).click();
     cy.contains('Email ou senha inválidos').should('be.visible');
     cy.window().should(win => expect(win.Meteor.userId()).to.equal(null));
