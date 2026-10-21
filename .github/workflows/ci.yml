@@ -20,7 +20,7 @@ jobs:
           cache: npm
       - name: Install pinned Meteor release
         run: |
-          curl --fail --show-error --silent 'https://install.meteor.com/?release=3.5' -o /tmp/install-meteor.sh
+          curl --fail --show-error --silent 'https://install.meteor.com/?release=3.5.2' -o /tmp/install-meteor.sh
           sh /tmp/install-meteor.sh
           echo "$HOME/.meteor" >> "$GITHUB_PATH"
       - run: npm ci

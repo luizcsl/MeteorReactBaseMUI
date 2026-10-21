@@ -1,6 +1,6 @@
 # Deploy e operação
 
-O bundle Meteor 3.5 deve ser construído e executado com Node 24. O [`Dockerfile`](../Dockerfile) já usa a mesma versão no
+O bundle Meteor 3.5.2 deve ser construído e executado com Node 24. O [`Dockerfile`](../Dockerfile) já usa a mesma versão no
 builder e no runtime, instala `tini` e executa como usuário `node`.
 
 ## Produção local com Compose

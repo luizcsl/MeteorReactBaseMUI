@@ -1,6 +1,6 @@
 # Padrões de código
 
-Estas convenções refletem Meteor 3.5, React 19 e TypeScript estrito. Código novo deve manter `npm run typecheck` sem
+Estas convenções refletem Meteor 3.5.2, React 19 e TypeScript estrito. Código novo deve manter `npm run typecheck` sem
 erros e não pode depender de Fibers ou APIs síncronas de servidor.
 
 ## Fronteiras de execução

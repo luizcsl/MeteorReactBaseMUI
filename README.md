@@ -10,7 +10,7 @@ Leia [AI Development](docs/AI_DEVELOPMENT.md), [contrato do harness Synergia Cod
 
 ## Stack atual
 
-- Meteor 3.5 com Node.js 24.15 no build e no runtime Docker;
+- Meteor 3.5.2 com Node.js 24.15 no build e no runtime Docker;
 - React 19.2 e React Router 6.30;
 - Material UI 7.3 e MUI X Data Grid 8.28;
 - MongoDB 7 com replica set;
@@ -45,7 +45,7 @@ As versões exatas estão em [`.meteor/release`](.meteor/release), [`.meteor/pac
 Para execução local sem Docker:
 
 - Node.js 24;
-- Meteor 3.5;
+- Meteor 3.5.2;
 - MongoDB gerenciado pelo Meteor ou MongoDB 7 com replica set.
 
 Para execução em containers:
@@ -152,7 +152,7 @@ npm run docker:prod
 
 O Compose de produção:
 
-- constrói o bundle com Meteor 3.5 e Node 24.15;
+- constrói o bundle com Meteor 3.5.2 e Node 24.15;
 - executa o runtime como usuário `node` e usa `tini`;
 - mantém MongoDB e uploads em volumes;
 - não publica a porta do MongoDB no host;

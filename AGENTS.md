@@ -2,7 +2,7 @@
 
 Read `docs/AI_DEVELOPMENT.md` before changing architecture and the nearest module manifest before editing.
 
-- Runtime: Meteor 3.5 / Node 24, React 19, MUI 7, strict TypeScript. Exact versions are locked.
+- Runtime: Meteor 3.5.2 / Node 24, React 19, MUI 7, strict TypeScript. Exact versions are locked.
 - New modules use `imports/core` contracts and `imports/modules/tasks` as the canonical reference, not the legacy Example capabilities demo.
 - Server code belongs in a `server/` directory. Never import it from shared/contracts/UI code.
 - Remote input is untrusted. Identity comes from invocation; require explicit policy, strict DTO, output projection and document-scoped queries.
