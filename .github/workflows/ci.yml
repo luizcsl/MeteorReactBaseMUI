@@ -38,20 +38,33 @@ jobs:
           npm run test:security 2>&1 | tee /tmp/security-tests.log
           grep -Eq '[1-9][0-9]* passing' /tmp/security-tests.log
           ! grep -Eq '[1-9][0-9]* failing' /tmp/security-tests.log
+      - name: Replica-set transaction port qualification
+        run: |
+          set -o pipefail
+          npm run test:transactions 2>&1 | tee /tmp/transaction-tests.log
+          grep -q "replica-set transaction port qualification" /tmp/transaction-tests.log
+          grep -Eq "[1-9][0-9]* passing" /tmp/transaction-tests.log
+          ! grep -Eq "[1-9][0-9]* failing" /tmp/transaction-tests.log
       - name: Generated module registration, Mongo and DDP qualification
         run: |
           set -o pipefail
           npm run templates:runtime 2>&1 | tee /tmp/template-runtime-tests.log
       - name: Build all application targets
         run: meteor build /tmp/meteor-build --directory
-      - name: Production vulnerability gate
-        run: npm audit --omit=dev --audit-level=high
+      - name: Dependency vulnerability gates and SBOM
+        run: |
+          npm audit --audit-level=high
+          npm audit --omit=dev --audit-level=high
+          mkdir -p .ai-artifacts
+          npm sbom --sbom-format cyclonedx --omit=dev > .ai-artifacts/sbom.cdx.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: security-test-evidence
           path: |
             /tmp/security-tests.log
+            /tmp/transaction-tests.log
             /tmp/template-runtime-tests.log
+            .ai-artifacts/sbom.cdx.json
           if-no-files-found: warn
           retention-days: 14

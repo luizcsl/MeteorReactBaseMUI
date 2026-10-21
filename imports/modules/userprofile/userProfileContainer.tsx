@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { IDefaultContainerProps } from '../../typings/BoilerplateDefaultTypings';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import UserProfileListController from '../../modules/userprofile/pages/UserProfileList/userProfileListController';
-import ExampleDetailController from '../example/pages/exampleDetail/exampleDetailContoller';
+import UserProfileDetailController from './pages/UserProfileDetail/userProfileDetailController';
 import AuthContext, { IAuthContext } from '/imports/app/authProvider/authContext';
 
 export interface IUserProfileModuleContext {
@@ -14,6 +14,7 @@ export const UserProfileModuleContext = React.createContext<IUserProfileModuleCo
 
 export default (props: IDefaultContainerProps) => {
 	const { user } = useContext<IAuthContext>(AuthContext);
+	const navigate = useNavigate();
 	let { screenState, userprofileId } = useParams();
 
 	const state = screenState ? screenState : props.screenState;
@@ -23,7 +24,7 @@ export default (props: IDefaultContainerProps) => {
 
 	const renderPage = () => {
 		if (!!!state || !validState.includes(state)) return <UserProfileListController />;
-		return <ExampleDetailController />;
+		return <UserProfileDetailController id={state === 'create' ? undefined : id} mode={state as 'view' | 'edit' | 'create'} onClose={() => navigate('/userprofile')} />;
 	};
 
 	const providerValue = {

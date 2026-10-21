@@ -12,12 +12,13 @@ interface IUserProfileDetailControllerContext {
 	loading: boolean;
 	schema: ISchema<IUserProfile>;
 	onSubmit: (doc: IUserProfile) => void;
-	mode: 'create' | 'edit';
+	mode: 'create' | 'edit' | 'view';
 	closeDialog: () => void;
 }
 
 interface IUserProfileDetailController {
-	mode: 'create' | 'edit';
+	onClose?: () => void;
+	mode: 'create' | 'edit' | 'view';
 	id?: string;
 }
 
@@ -25,8 +26,9 @@ export const UserProfileDetailControllerContext = React.createContext<IUserProfi
 	{} as IUserProfileDetailControllerContext
 );
 
-const UserProfileDetailController = ({ id, mode }: IUserProfileDetailController) => {
-	const { showNotification, closeDialog } = useContext<IAppLayoutContext>(AppLayoutContext);
+const UserProfileDetailController = ({ id, mode, onClose }: IUserProfileDetailController) => {
+	const { showNotification, closeDialog: closeModal } = useContext<IAppLayoutContext>(AppLayoutContext);
+	const closeDialog = onClose ?? closeModal;
 	const [loading, setLoading] = useState(false);
 
 	const { user, trackerLoading } = useTracker(() => {
@@ -40,6 +42,7 @@ const UserProfileDetailController = ({ id, mode }: IUserProfileDetailController)
 
 	const onSubmit = useCallback(
 		(doc: IUserProfile) => {
+			if (mode === 'view') return;
 			setLoading(true);
 			userprofileApi['upsert'](doc, (e: IMeteorError, r: IUserProfile) => {
 				if (!e) {
@@ -59,7 +62,7 @@ const UserProfileDetailController = ({ id, mode }: IUserProfileDetailController)
 				closeDialog();
 			});
 		},
-		[user]
+		[user, mode, closeDialog, showNotification]
 	);
 
 	return (

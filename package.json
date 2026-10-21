@@ -32,11 +32,12 @@
     "test:toolkit": "node --test tools/test/*.test.mjs evals/*.test.mjs",
     "test:security": "TEST_SERVER_ONLY=1 meteor test --once --driver-package meteortesting:mocha --port 3102",
     "verify": "npm run typecheck && npm run test:core && npm run test:toolkit && npm run boundaries:check && npm run templates:verify && npm run docs:verify && npm run test:security",
-    "verify:release": "npm run verify && npm run templates:runtime && npm run test:browser && meteor build /tmp/meteor-release-build --directory",
+    "verify:release": "npm run verify && npm run test:transactions && npm run templates:runtime && npm run test:browser && meteor build /tmp/meteor-release-build --directory",
     "test:core": "node tools/run-core-tests.mjs",
     "eval:agents": "node evals/report.mjs",
     "templates:runtime": "node tools/verify-template-runtime.mjs",
-    "test:browser": "cypress run --config-file cypress.ai-ready.config.ts"
+    "test:browser": "cypress run --config-file cypress.ai-ready.config.ts",
+    "test:transactions": "TEST_TRANSACTIONS=1 TEST_SERVER_ONLY=1 meteor test --once --driver-package meteortesting:mocha --port 3106"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -113,5 +114,6 @@
   "engines": {
     "node": ">=24 <25",
     "npm": ">=11 <13"
-  }
+  },
+  "version": "0.1.0-ai-ready.1"
 }

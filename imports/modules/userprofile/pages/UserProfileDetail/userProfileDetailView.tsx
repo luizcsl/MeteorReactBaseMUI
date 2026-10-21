@@ -19,7 +19,7 @@ const UserProfileDetailView = () => {
 	return (
 		<Container>
 			<DialogTitle variant="subtitle1" sx={{ padding: 0 }}>
-				{mode === 'create' ? 'Adicionar usuário' : 'Editar usuário'}
+				{mode === 'create' ? 'Adicionar usuário' : mode === 'view' ? 'Visualizar usuário' : 'Editar usuário'}
 			</DialogTitle>
 			<SysForm schema={schema} doc={user} mode={mode} onSubmit={onSubmit} ref={sysFormRef} loading={loading}>
 				<FieldsForm>
@@ -34,7 +34,7 @@ const UserProfileDetailView = () => {
 						<Button variant="outlined" startIcon={<SysIcon name={'close'} />} onClick={closeDialog}>
 							Cancelar
 						</Button>
-						<SysFormButton startIcon={<SysIcon name={'check'} />}>Salvar</SysFormButton>
+						{mode !== 'view' && <SysFormButton startIcon={<SysIcon name={'check'} />}>Salvar</SysFormButton>}
 					</Actions>
 				</FieldsForm>
 			</SysForm>

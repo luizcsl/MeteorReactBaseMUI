@@ -1,10 +1,8 @@
+import { syntheticCredentials } from './helpers';
 // Synthetic isolated account only. The runner must bootstrap it in its disposable DB.
 describe('canonical owner CRUD in the real browser', () => {
   it('authenticates, creates, edits, completes and deletes a task', () => {
-    const email = Cypress.env('TEST_USER_EMAIL');
-    const password = Cypress.env('TEST_USER_PASSWORD');
-    expect(email, 'synthetic email supplied').to.be.a('string').and.not.be.empty;
-    expect(password, 'synthetic password supplied').to.be.a('string').and.not.be.empty;
+    const { email, password } = syntheticCredentials();
     cy.visit('/');
     cy.window().its('Meteor').should('exist').then(Meteor => new Cypress.Promise((resolve, reject) => {
       Meteor.loginWithPassword(email, password, error => error ? reject(error) : resolve());
