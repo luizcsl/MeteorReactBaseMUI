@@ -36,7 +36,13 @@ export interface RecipeDTO {
 	state: string;
 	data: RecipeData;
 }
+/** Server-only compiled-query adapter. Callers MUST build authorized selectors; never expose raw queries over DDP. */
+export interface RecipeQueryPort {
+	find(selector: Record<string, unknown>, options: { sort: Record<string, 1 | -1>; limit: number; projection: Record<string, 1> }): Promise<Record<string, unknown>[]>;
+	aggregate(pipeline: Record<string, unknown>[]): Promise<Record<string, unknown>[]>;
+}
 export interface RecipeRepository {
+	query?: RecipeQueryPort;
 	observeChanges?: (invalidate: () => void) => Promise<{ stop(): void | Promise<void> }>;
 	find(scope: RecipeScope, id: string): Promise<RecipeRecord | null>;
 	list(scope: RecipeScope, filters: RecipeData, limit: number): Promise<RecipeRecord[]>;

@@ -1,0 +1,27 @@
+{
+	"type": "object",
+	"additionalProperties": false,
+	"required": [],
+	"properties": {
+		"propertyCases": {
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 100,
+			"default": 32
+		},
+		"browserPath": {
+			"type": "string",
+			"minLength": 2,
+			"maxLength": 121,
+			"pattern": "^/[a-zA-Z0-9/_-]{1,120}$",
+			"not": {
+				"pattern": "//"
+			},
+			"description": "Defaults to / followed by definition.name. Local application route only; no origin, query or traversal."
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "tests.v1.schema.json",
+	"title": "Complementary test-generator options v1",
+	"description": "Standalone renderTests options. Feature v3 always emits complementary tests with defaults and has no tests property. Browser execution requires a provisioned synthetic account and integrated route. Mandatory protected suites cannot be disabled or replaced."
+}

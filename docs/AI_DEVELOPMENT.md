@@ -43,3 +43,5 @@ Read the nearest `architecture.manifest.json` or generated `module.manifest.json
 Use [domain contracts](DOMAIN_CONTRACTS.md) for date/money/reference fields and [qualification](BOILERPLATE_QUALIFICATION.md) before accepting an integrated result.
 
 Para evolução de campos legados, consulte [domínios, propagação e testes específicos](LEGACY_FIELDS.md). Execute `npm run legacy:check -- --module example` e as suítes vinculadas às fontes antes de alegar aceitação funcional.
+
+Deterministic composed development: [Automation Engine](AUTOMATION_ENGINE.md), with a 55-capability bounded catalog, shared boilerplate transports, reviewed plans, generated UI/tests/services, semantic codemods and protected qualification.

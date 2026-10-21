@@ -14,10 +14,15 @@ export interface RecipeFormProps {
 	disabled?: boolean;
 	text?: { save: string; saving: string; error: string };
 	onSubmit: (data: RecipeData) => Promise<void>;
+	onChange?: (data: RecipeData) => void;
 }
 /** Rendering metadata is UX only. Server repeats validation and authorization for every operation. */
-export function RecipeForm({ definition, initial, disabled = false, text, onSubmit }: RecipeFormProps) {
+export function RecipeForm({ definition, initial, disabled = false, text, onSubmit, onChange }: RecipeFormProps) {
 	const [data, setData] = useState<RecipeData>(() => initial ?? initialRecipeData(definition));
+	const changeData = (next: RecipeData) => {
+		setData(next);
+		onChange?.(next);
+	};
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState('');
 	const submit = async (event: React.FormEvent) => {
@@ -54,7 +59,7 @@ export function RecipeForm({ definition, initial, disabled = false, text, onSubm
 								<Checkbox
 									checked={data[field.name] === true}
 									disabled={disabled || pending}
-									onChange={(e) => setData({ ...data, [field.name]: e.target.checked })}
+									onChange={(e) => changeData({ ...data, [field.name]: e.target.checked })}
 								/>
 							}
 						/>
@@ -89,7 +94,7 @@ export function RecipeForm({ definition, initial, disabled = false, text, onSubm
 								}
 							}}
 							onChange={(e) =>
-								setData({
+								changeData({
 									...data,
 									[field.name]:
 										e.target.value === '' && !field.required

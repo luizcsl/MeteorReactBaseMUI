@@ -13,8 +13,16 @@ export function mongoRecipeRepository(name: string): RecipeRepository {
 			...(id ? { _id: id } : {})
 		};
 	};
+	// Native-driver writes do not trigger Meteor invalidation without an oplog. Bound fallback polling.
+	const observeOptions = { fields: { _id: 1, version: 1, ownerId: 1, tenantId: 1, parentId: 1, deleted: 1, state: 1, data: 1 }, pollingIntervalMs: 1000 };
 	return {
-		observeChanges: async (invalidate) => collection.find({}, { fields: { _id: 1, version: 1 } }).observeChanges({ added: invalidate, changed: invalidate, removed: invalidate }),
+		query: {
+			find: async (query, options) => (await collection.find(query as Mongo.Selector<RecipeRecord>, {
+				sort: options.sort, limit: options.limit, fields: options.projection
+			}).fetchAsync()).map((row) => ({ ...row })),
+			aggregate: async (pipeline) => collection.rawCollection().aggregate(pipeline).toArray()
+		},
+		observeChanges: async (invalidate) => collection.find({}, observeOptions).observeChanges({ added: invalidate, changed: invalidate, removed: invalidate }),
 		find: async (scope, id) => (await collection.findOneAsync(selector(scope, id))) ?? null,
 		list: async (scope, filters, limit) => {
 			const filter = Object.fromEntries(Object.entries(filters).map(([key, value]) => [`data.${key}`, value]));

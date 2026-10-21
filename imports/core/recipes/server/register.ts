@@ -9,14 +9,15 @@ import { recipeService, type RecipePorts } from './engine';
 import { mongoRecipeRepository } from './mongo';
 const registered = new Set<string>();
 /** Explicit server-only registration. No client stubs or role-bearing input; publications require a trusted revocation observer. */
-export function registerRecipe(raw: RecipeDefinition, ports: Omit<RecipePorts, 'repository'>): void {
+export function registerRecipe(raw: RecipeDefinition, ports: Omit<RecipePorts, 'repository'>): RecipePorts {
 	if (!Meteor.isServer) throw new Error('Recipe registration is server-only');
 	const definition = validateDefinition(raw);
 	if (registered.has(definition.name)) throw new Error('Duplicate recipe registration');
 	if (ports.observeIdentity && definition.profile === 'master-detail' && !ports.observeDependencies)
 		throw new Error('Reactive master/detail requires a parent dependency observer');
 	const repository = mongoRecipeRepository(`recipe_${definition.name}`);
-	const service = recipeService(definition, { ...ports, repository });
+	const servicePorts: RecipePorts = { ...ports, repository };
+	const service = recipeService(definition, servicePorts);
 	for (const operation of ['list', 'create', 'update', 'transition', 'remove'] as const) {
 		const name = `${definition.name}.${operation}`;
 		registerMethods({
@@ -45,4 +46,5 @@ export function registerRecipe(raw: RecipeDefinition, ports: Omit<RecipePorts, '
 		DDPRateLimiter.addRule({ type: 'subscription', name: `${definition.name}.records`, connectionId: () => true }, 30, 60_000);
 	}
 	registered.add(definition.name);
+	return servicePorts;
 }

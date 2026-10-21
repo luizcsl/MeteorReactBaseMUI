@@ -1,0 +1,157 @@
+{
+	"type": "object",
+	"additionalProperties": false,
+	"required": [],
+	"properties": {
+		"layout": {
+			"enum": ["list-detail", "wizard"],
+			"default": "list-detail"
+		},
+		"columns": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 30,
+			"uniqueItems": true,
+			"items": {
+				"type": "string",
+				"pattern": "^[a-z][A-Za-z0-9]{0,39}$",
+				"not": {
+					"enum": [
+						"constructor",
+						"prototype",
+						"__proto__",
+						"ownerId",
+						"tenantId",
+						"userId",
+						"version",
+						"state",
+						"roles",
+						"password",
+						"token"
+					]
+				}
+			},
+			"description": "Defaults to every field in definition order. Every entry must name a declared field."
+		},
+		"pageSize": {
+			"enum": [5, 10, 25, 50],
+			"default": 10,
+			"description": "Local pagination within the bounded 100-record authorized window, not server cursor pagination."
+		},
+		"density": {
+			"enum": ["compact", "standard"],
+			"default": "standard"
+		},
+		"bulk": {
+			"const": "delete",
+			"description": "Absent disables bulk actions. Deletion requires the generated confirmation dialog and per-record server authorization."
+		},
+		"locales": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 2,
+			"uniqueItems": true,
+			"items": {
+				"enum": ["en", "pt-BR"]
+			},
+			"default": ["en"],
+			"description": "Generated interface chrome. Product field and step labels are supplied by the specification."
+		},
+		"reactive": {
+			"type": "boolean",
+			"default": false,
+			"description": "True requires a server-owned trusted identity observer integration."
+		},
+		"steps": {
+			"type": "array",
+			"minItems": 2,
+			"maxItems": 10,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["label", "fields"],
+				"properties": {
+					"label": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 80,
+						"pattern": "\\S"
+					},
+					"fields": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 30,
+						"uniqueItems": true,
+						"items": {
+							"type": "string",
+							"pattern": "^[a-z][A-Za-z0-9]{0,39}$",
+							"not": {
+								"enum": [
+									"constructor",
+									"prototype",
+									"__proto__",
+									"ownerId",
+									"tenantId",
+									"userId",
+									"version",
+									"state",
+									"roles",
+									"password",
+									"token"
+								]
+							}
+						}
+					}
+				}
+			},
+			"description": "Wizard only. Labels must be unique; fields across all steps must partition definition.fields exactly once. Progress defaults to memory; explicit session persistence is supported."
+		},
+		"persistProgress": {
+			"enum": ["none", "session"],
+			"default": "none",
+			"description": "Wizard only for session. Stores per-user/module/context progress in sessionStorage, expires after 30 minutes, bounded to 64 KiB, schema/version checked. Cleared on logout, scope change, revocation and successful save. Owner profile only. Tenant/team/approval/master-detail persistence requires a separately reviewed server-trusted tenant context and is rejected."
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "ui.v1.schema.json",
+	"title": "Bounded feature UI options v1",
+	"description": "Omitted options use documented defaults. Unsupported shapes fail closed. Definition-dependent checks are performed by validateUI. Explicit null is not accepted.",
+	"allOf": [
+		{
+			"if": {
+				"required": ["layout"],
+				"properties": {
+					"layout": {
+						"const": "wizard"
+					}
+				}
+			},
+			"then": {
+				"required": ["steps"]
+			},
+			"else": {
+				"not": {
+					"required": ["steps"]
+				}
+			}
+		},
+		{
+			"if": {
+				"required": ["persistProgress"],
+				"properties": {
+					"persistProgress": {
+						"const": "session"
+					}
+				}
+			},
+			"then": {
+				"required": ["layout"],
+				"properties": {
+					"layout": {
+						"const": "wizard"
+					}
+				}
+			}
+		}
+	]
+}

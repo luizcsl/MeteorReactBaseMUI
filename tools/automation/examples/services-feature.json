@@ -1,0 +1,134 @@
+{
+	"schemaVersion": 1,
+	"operations": [
+		{
+			"id": "service-invoices",
+			"kind": "feature",
+			"input": {
+				"schemaVersion": 3,
+				"intent": "create-feature",
+				"name": "serviceinvoices",
+				"archetype": "owner",
+				"fields": [
+					{
+						"name": "title",
+						"label": "Title",
+						"type": "string",
+						"required": true,
+						"maxLength": 160
+					},
+					{
+						"name": "amount",
+						"label": "Amount",
+						"type": "integer",
+						"required": true,
+						"min": 0,
+						"max": 1000000
+					},
+					{
+						"name": "done",
+						"label": "Done",
+						"type": "boolean",
+						"required": true
+					}
+				],
+				"permissions": {
+					"read": ["owner"],
+					"write": ["owner"]
+				},
+				"filters": ["done"],
+				"states": ["active"],
+				"transitions": [],
+				"services": {
+					"attachments": {
+						"maxBytes": 1048576,
+						"mimeTypes": ["application/pdf"]
+					},
+					"csv": {
+						"fields": ["title", "amount", "done"],
+						"maxRows": 1000
+					},
+					"notifications": {
+						"events": ["created"],
+						"subjectTemplate": "New {{title}}",
+						"textTemplate": "Amount: {{amount}}"
+					},
+					"jobs": {
+						"maxAttempts": 3,
+						"leaseMs": 30000
+					},
+					"search": {
+						"fields": ["done"],
+						"pageSize": 50
+					},
+					"audit": {
+						"events": ["updated"],
+						"retentionDays": 365
+					},
+					"api": {
+						"openapi": {
+							"openapi": "3.0.3",
+							"info": {
+								"title": "Example service contract",
+								"version": "1.0.0"
+							},
+							"servers": [
+								{
+									"url": "https://api.example.com"
+								}
+							],
+							"paths": {
+								"/health": {
+									"get": {
+										"operationId": "health",
+										"responses": {
+											"200": {
+												"description": "Healthy",
+												"content": {
+													"application/json": {
+														"schema": {
+															"type": "object",
+															"properties": {
+																"healthy": {
+																	"type": "boolean"
+																}
+															},
+															"required": ["healthy"],
+															"additionalProperties": false
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"reports": {
+						"metrics": [
+							{
+								"name": "count",
+								"op": "count"
+							},
+							{
+								"name": "total",
+								"op": "sum",
+								"field": "amount"
+							}
+						]
+					},
+					"dependencies": {
+						"updates": [
+							{
+								"name": "meteor-node-stubs",
+								"from": "1.2.31",
+								"to": "1.2.32"
+							}
+						]
+					}
+				}
+			}
+		}
+	]
+}

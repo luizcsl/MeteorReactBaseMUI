@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"operations": [
+		{
+			"id": "notes",
+			"kind": "feature",
+			"input": {
+				"schemaVersion": 3,
+				"intent": "create-feature",
+				"name": "notes",
+				"archetype": "owner",
+				"fields": [
+					{
+						"name": "title",
+						"label": "Title",
+						"type": "string",
+						"required": true,
+						"maxLength": 160
+					}
+				],
+				"permissions": {
+					"read": ["owner"],
+					"write": ["owner"]
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,552 @@
+{
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "intent", "name", "archetype", "fields", "permissions"],
+	"properties": {
+		"schemaVersion": {
+			"const": 3
+		},
+		"intent": {
+			"const": "create-feature"
+		},
+		"name": {
+			"allOf": [
+				{
+					"type": "string",
+					"pattern": "^[a-z][A-Za-z0-9]{0,39}$",
+					"not": {
+						"enum": [
+							"constructor",
+							"prototype",
+							"__proto__",
+							"ownerId",
+							"tenantId",
+							"userId",
+							"version",
+							"state",
+							"roles",
+							"password",
+							"token"
+						]
+					}
+				},
+				{
+					"type": "string",
+					"pattern": "^[a-z][a-z0-9]{2,31}$",
+					"not": {
+						"enum": ["tasks", "core", "server", "client", "index", "tests"]
+					}
+				}
+			]
+		},
+		"archetype": {
+			"enum": ["owner", "team", "master-detail", "approval"]
+		},
+		"fields": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 30,
+			"items": {
+				"$ref": "#/$defs/recipeField"
+			},
+			"description": "Field names must be unique. Integer and money min must be <= max. References require a reviewed scoped target adapter."
+		},
+		"rules": {
+			"type": "array",
+			"minItems": 0,
+			"maxItems": 20,
+			"items": {
+				"$ref": "#/$defs/recipeRule"
+			},
+			"default": []
+		},
+		"filters": {
+			"type": "array",
+			"minItems": 0,
+			"maxItems": 10,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/identifier"
+			},
+			"default": [],
+			"description": "Every filter must name a declared field."
+		},
+		"states": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 20,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/identifier"
+			},
+			"default": ["draft"]
+		},
+		"transitions": {
+			"type": "array",
+			"minItems": 0,
+			"maxItems": 40,
+			"items": {
+				"$ref": "#/$defs/transition"
+			},
+			"default": [],
+			"description": "from/to must be different declared states; directed state pairs must be unique."
+		},
+		"permissions": {
+			"$ref": "#/$defs/permissions"
+		},
+		"ui": {
+			"$ref": "ui.v1.schema.json",
+			"default": {}
+		},
+		"services": {
+			"$ref": "services.v1.schema.json"
+		},
+		"integration": {
+			"$ref": "#/$defs/integration"
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "feature.v3.schema.json",
+	"title": "Feature v3",
+	"description": "Deterministic bounded feature contract. UI defaults are defined by ui.v1.schema.json. Complementary tests are always generated with tests.v1.schema.json defaults; this contract intentionally has no tests property. JSON Schema validates shape; validateFeature/validateDefinition/validateUI validate references, uniqueness by field name, rule type compatibility and authorization semantics. Generation never constitutes qualification.",
+	"$defs": {
+		"identifier": {
+			"type": "string",
+			"pattern": "^[a-z][A-Za-z0-9]{0,39}$",
+			"not": {
+				"enum": [
+					"constructor",
+					"prototype",
+					"__proto__",
+					"ownerId",
+					"tenantId",
+					"userId",
+					"version",
+					"state",
+					"roles",
+					"password",
+					"token"
+				]
+			}
+		},
+		"recipeField": {
+			"oneOf": [
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type", "maxLength"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "string"
+						},
+						"maxLength": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 2000
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type", "min", "max"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "integer"
+						},
+						"min": {
+							"type": "integer",
+							"minimum": -9007199254740991,
+							"maximum": 9007199254740991
+						},
+						"max": {
+							"type": "integer",
+							"minimum": -9007199254740991,
+							"maximum": 9007199254740991
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "boolean"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type", "values"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "enum"
+						},
+						"values": {
+							"type": "array",
+							"minItems": 1,
+							"maxItems": 30,
+							"uniqueItems": true,
+							"items": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 80
+							}
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "date"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type", "min", "max", "currency", "scale"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "money"
+						},
+						"min": {
+							"type": "integer",
+							"minimum": -9007199254740991,
+							"maximum": 9007199254740991
+						},
+						"max": {
+							"type": "integer",
+							"minimum": -9007199254740991,
+							"maximum": 9007199254740991
+						},
+						"currency": {
+							"type": "string",
+							"pattern": "^[A-Z]{3}$"
+						},
+						"scale": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 4
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "label", "required", "type", "target"],
+					"properties": {
+						"name": {
+							"$ref": "#/$defs/identifier"
+						},
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100
+						},
+						"required": {
+							"type": "boolean"
+						},
+						"type": {
+							"const": "reference"
+						},
+						"target": {
+							"type": "string",
+							"pattern": "^[a-z][a-z0-9]{2,31}$"
+						}
+					}
+				}
+			]
+		},
+		"recipeRule": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "left", "right"],
+			"properties": {
+				"kind": {
+					"const": "lte"
+				},
+				"left": {
+					"$ref": "#/$defs/identifier"
+				},
+				"right": {
+					"$ref": "#/$defs/identifier"
+				}
+			},
+			"description": "Distinct fields of the same supported ordered type; rule pairs must be unique. Semantic checks run in validateDefinition."
+		},
+		"transition": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["from", "to", "roles"],
+			"properties": {
+				"from": {
+					"$ref": "#/$defs/identifier"
+				},
+				"to": {
+					"$ref": "#/$defs/identifier"
+				},
+				"roles": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 3,
+					"uniqueItems": true,
+					"items": {
+						"enum": ["owner", "member", "reviewer"]
+					}
+				}
+			}
+		},
+		"permissions": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["read", "write"],
+			"properties": {
+				"read": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 3,
+					"uniqueItems": true,
+					"items": {
+						"enum": ["owner", "member", "reviewer"]
+					}
+				},
+				"write": {
+					"type": "array",
+					"minItems": 1,
+					"maxItems": 3,
+					"uniqueItems": true,
+					"items": {
+						"enum": ["owner", "member", "reviewer"]
+					}
+				}
+			}
+		},
+		"integration": {
+			"oneOf": [
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["label", "identity"],
+					"properties": {
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100,
+							"pattern": "\\S"
+						},
+						"identity": {
+							"const": "owner-active-account"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["label", "identity", "ports"],
+					"properties": {
+						"label": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 100,
+							"pattern": "\\S"
+						},
+						"identity": {
+							"const": "reviewed-ports"
+						},
+						"ports": {
+							"type": "string",
+							"minLength": 1,
+							"pattern": "^[^/\\\\\\u0000]+(?:/[^/\\\\\\u0000]+)*/server/ports\\.ts(?![\\s\\S])",
+							"not": {
+								"pattern": "(^|/)\\.\\.?(/|$)"
+							},
+							"description": "Existing repository-relative server/ports.ts file. Empty/dot/traversal segments, NUL and backslashes are rejected; filesystem confinement and source review are required."
+						}
+					}
+				}
+			]
+		}
+	},
+	"allOf": [
+		{
+			"if": {
+				"properties": {
+					"archetype": {
+						"enum": ["owner", "master-detail"]
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"permissions": {
+						"properties": {
+							"read": {
+								"items": {
+									"const": "owner"
+								}
+							},
+							"write": {
+								"items": {
+									"const": "owner"
+								}
+							}
+						}
+					},
+					"transitions": {
+						"items": {
+							"properties": {
+								"roles": {
+									"items": {
+										"const": "owner"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"if": {
+				"required": ["integration"],
+				"properties": {
+					"integration": {
+						"required": ["identity"],
+						"properties": {
+							"identity": {
+								"const": "owner-active-account"
+							}
+						}
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"archetype": {
+						"const": "owner"
+					}
+				}
+			}
+		},
+		{
+			"if": {
+				"required": ["services"],
+				"properties": {
+					"services": {
+						"required": ["search"]
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"archetype": {
+						"not": {
+							"const": "master-detail"
+						}
+					},
+					"ui": {
+						"properties": {
+							"reactive": {
+								"const": false
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"if": {
+				"required": ["ui"],
+				"properties": {
+					"ui": {
+						"required": ["persistProgress"],
+						"properties": {
+							"persistProgress": {
+								"const": "session"
+							}
+						}
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"archetype": {
+						"const": "owner"
+					}
+				}
+			}
+		}
+	]
+}

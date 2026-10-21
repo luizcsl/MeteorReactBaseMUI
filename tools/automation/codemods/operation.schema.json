@@ -1,0 +1,306 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Semantic codemod operation v1",
+	"oneOf": [
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol", "newName"],
+			"properties": {
+				"kind": {
+					"const": "rename-field"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"newName": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol"],
+			"properties": {
+				"kind": {
+					"const": "change-field"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"type": {
+					"enum": ["string", "number", "boolean"]
+				},
+				"required": {
+					"type": "boolean"
+				}
+			},
+			"anyOf": [
+				{
+					"required": ["type"]
+				},
+				{
+					"required": ["required"]
+				}
+			]
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "to"],
+			"properties": {
+				"kind": {
+					"const": "rename-module"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"to": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "from", "to"],
+			"properties": {
+				"kind": {
+					"const": "rename-route"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"from": {
+					"type": "string",
+					"pattern": "^/"
+				},
+				"to": {
+					"type": "string",
+					"pattern": "^/"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol", "to"],
+			"properties": {
+				"kind": {
+					"const": "move-symbol"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"to": {
+					"type": "string",
+					"minLength": 1
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol", "to", "recipe"],
+			"properties": {
+				"kind": {
+					"const": "modernize-legacy"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"to": {
+					"type": "string",
+					"minLength": 1
+				},
+				"recipe": {
+					"const": "extract-public-contract"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "recipe"],
+			"properties": {
+				"kind": {
+					"const": "migrate-framework"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"recipe": {
+					"const": "meteor-user-async"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol"],
+			"properties": {
+				"kind": {
+					"const": "deprecate-symbol"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "file", "symbol"],
+			"properties": {
+				"kind": {
+					"const": "remove-symbol"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "recipe", "file", "symbol", "mappings"],
+			"properties": {
+				"kind": {
+					"const": "modernize-legacy"
+				},
+				"file": {
+					"type": "string",
+					"pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\\\]+\\.[cm]?[jt]sx?$"
+				},
+				"symbol": {
+					"type": "string",
+					"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+				},
+				"recipe": {
+					"const": "register-method-to-operation"
+				},
+				"position": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"mappings": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["input", "output", "policy", "contextBuilder", "identityFromLegacy", "project", "effect"],
+					"properties": {
+						"input": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"output": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"policy": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"contextBuilder": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"identityFromLegacy": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"project": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"concurrency": {
+							"type": "string",
+							"pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"
+						},
+						"effect": {
+							"enum": ["read", "write"]
+						}
+					},
+					"allOf": [
+						{
+							"if": {
+								"properties": {
+									"effect": {
+										"const": "write"
+									}
+								}
+							},
+							"then": {
+								"required": ["concurrency"]
+							},
+							"else": {
+								"not": {
+									"required": ["concurrency"]
+								}
+							}
+						}
+					]
+				}
+			}
+		}
+	]
+}

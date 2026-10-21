@@ -80,8 +80,8 @@ async function loadTransport(file, stub) {
  const key = '__transport_' + Math.random().toString(36).slice(2); globalThis[key] = stub;
  const result = await build({ entryPoints: [path.join(root, file)], bundle: true, platform: 'node', format: 'esm', write: false,
   plugins: [{ name: 'meteor-test-port', setup(build) {
-   build.onResolve({ filter: /^meteor\/meteor$/ }, () => ({ path: 'meteor', namespace: 'test' }));
-   build.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: `export const Meteor = globalThis[${JSON.stringify(key)}];` }));
+   build.onResolve({ filter: /^meteor\// }, (args) => ({ path: args.path, namespace: 'test' }));
+   build.onLoad({ filter: /.*/, namespace: 'test' }, (args) => ({ contents: args.path === 'meteor/mongo' ? `export const Mongo = globalThis[${JSON.stringify(key)}].mongo;` : args.path === 'meteor/ddp-rate-limiter' ? `export const DDPRateLimiter = globalThis[${JSON.stringify(key)}].rateLimiter;` : `export const Meteor = globalThis[${JSON.stringify(key)}];` }));
   } }] });
  const module = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
  delete globalThis[key]; return module;
@@ -116,4 +116,43 @@ test('revocation wins a racing older authorized read and dependency watchers ret
  await startRecipePublication(g.context, 'view', g.service, value, g.ports);
  g.service.list = async () => { throw Error('parent removed'); };
  dependencyChanged(); assert.equal(g.events.at(-1)[0], 'removed'); await tick(); assert.equal(stopped, true);
+});
+
+test('recipe registration returns the exact service ports and creates only one repository collection', async () => {
+ let constructions = 0;
+ const stub = { isServer: true, methods() {}, publish() {}, rateLimiter: { addRule() {} }, mongo: { Collection: class {
+  constructor() { constructions++; }
+  async findOneAsync() { return { _id: 'stored' }; }
+ } } };
+ const { registerRecipe } = await loadTransport('imports/core/recipes/server/register.ts', stub);
+ const source = { resolveIdentity: async userId => ({ userId, roles: [] }) };
+ const definition = JSON.parse(fs.readFileSync(path.join(root, 'templates/recipes/owner.json'), 'utf8'));
+ const ports = registerRecipe(definition, source);
+ assert.equal(ports.resolveIdentity, source.resolveIdentity);
+ assert.equal(constructions, 1);
+ assert.equal((await ports.repository.find({ ownerId: 'alice' }, 'stored'))._id, 'stored');
+ assert.throws(() => registerRecipe(definition, source), /Duplicate recipe/);
+ assert.equal(constructions, 1);
+ const { renderDefinition } = await import('../recipes.mjs');
+ assert.match(renderDefinition(definition)['generated/server/register.ts'], /return registerRecipe\(definition,ports\)/);
+});
+
+test('repository query adapter reuses collection and honors database-level query options', async () => {
+ let constructions = 0, capturedFind, capturedPipeline, observerOptions;
+ const stub = { mongo: { Collection: class {
+  constructor() { constructions++; }
+  find(selector, options) { capturedFind = { selector, options }; return { fetchAsync: async () => [{ _id: 'safe', data: { title: 'ok' } }], observeChanges: () => { observerOptions = options; return { stop() {} }; } }; }
+  rawCollection() { return { aggregate(pipeline) { capturedPipeline = pipeline; return { toArray: async () => [{ total: 1 }] }; } }; }
+ } } };
+ const { mongoRecipeRepository } = await loadTransport('imports/core/recipes/server/mongo.ts', stub);
+ const repository = mongoRecipeRepository('query_fixture');
+ const selector = { ownerId: 'alice', deleted: false }, options = { sort: { _id: 1 }, limit: 5, projection: { _id: 1 } };
+ await repository.query.find(selector, options);
+ assert.deepEqual(capturedFind, { selector, options: { sort: options.sort, limit: 5, fields: options.projection } });
+ const pipeline = [{ $match: selector }, { $count: 'total' }];
+ assert.deepEqual(await repository.query.aggregate(pipeline), [{ total: 1 }]); assert.deepEqual(capturedPipeline, pipeline);
+ await repository.observeChanges(() => {});
+ assert.equal(observerOptions.pollingIntervalMs, 1000);
+ for (const field of ['ownerId', 'tenantId', 'parentId', 'deleted', 'state', 'data', 'version']) assert.equal(observerOptions.fields[field], 1);
+ assert.equal(constructions, 1);
 });

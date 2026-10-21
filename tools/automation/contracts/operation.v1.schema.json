@@ -1,0 +1,231 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Automation request v1",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "operations"],
+	"properties": {
+		"schemaVersion": {
+			"const": 1
+		},
+		"operations": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 32,
+			"items": {
+				"oneOf": [
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "kind", "input"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^[a-z][a-z0-9-]{0,47}$"
+							},
+							"kind": {
+								"const": "feature"
+							},
+							"input": {
+								"$ref": "feature.v3.schema.json"
+							},
+							"dependsOn": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "kind", "input"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^[a-z][a-z0-9-]{0,47}$"
+							},
+							"kind": {
+								"const": "evolve"
+							},
+							"input": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": ["schemaVersion", "module", "operations"],
+								"properties": {
+									"schemaVersion": {
+										"const": 1
+									},
+									"module": {
+										"type": "string",
+										"pattern": "^[a-z][a-z0-9]{2,31}$"
+									},
+									"operations": {
+										"type": "array",
+										"minItems": 1,
+										"maxItems": 32,
+										"items": {
+											"oneOf": [
+												{
+													"type": "object",
+													"additionalProperties": false,
+													"required": ["kind", "field"],
+													"properties": {
+														"kind": {
+															"const": "add-field"
+														},
+														"field": {
+															"$ref": "feature.v3.schema.json#/$defs/recipeField"
+														}
+													}
+												},
+												{
+													"type": "object",
+													"additionalProperties": false,
+													"required": ["kind", "field"],
+													"properties": {
+														"kind": {
+															"const": "add-filter"
+														},
+														"field": {
+															"type": "string"
+														}
+													}
+												},
+												{
+													"type": "object",
+													"additionalProperties": false,
+													"required": ["kind", "state", "transitions"],
+													"properties": {
+														"kind": {
+															"const": "add-state"
+														},
+														"state": {
+															"type": "string"
+														},
+														"transitions": {
+															"type": "array"
+														}
+													}
+												},
+												{
+													"type": "object",
+													"additionalProperties": false,
+													"required": ["kind", "permissions"],
+													"properties": {
+														"kind": {
+															"const": "replace-permissions"
+														},
+														"permissions": {
+															"$ref": "feature.v3.schema.json#/properties/permissions"
+														}
+													}
+												}
+											]
+										}
+									}
+								}
+							},
+							"dependsOn": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "kind", "input"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^[a-z][a-z0-9-]{0,47}$"
+							},
+							"kind": {
+								"const": "integrate"
+							},
+							"input": {
+								"$ref": "integration.v1.schema.json"
+							},
+							"dependsOn": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "kind", "input"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^[a-z][a-z0-9-]{0,47}$"
+							},
+							"kind": {
+								"const": "codemod"
+							},
+							"input": {
+								"$ref": "../codemods/operation.schema.json"
+							},
+							"dependsOn": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "kind", "input"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^[a-z][a-z0-9-]{0,47}$"
+							},
+							"kind": {
+								"const": "project"
+							},
+							"input": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": ["profile", "features"],
+								"properties": {
+									"profile": {
+										"enum": ["owner-app", "tenant-app"]
+									},
+									"features": {
+										"type": "array",
+										"minItems": 1,
+										"maxItems": 10,
+										"items": {
+											"$ref": "feature.v3.schema.json"
+										}
+									}
+								}
+							},
+							"dependsOn": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+}

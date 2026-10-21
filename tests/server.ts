@@ -18,3 +18,5 @@ import '../imports/integration/server/tests';
 import './requests.server';
 
 import '../imports/modules/example/tests/server/fields.test';
+
+import './automation-reactive.server';
