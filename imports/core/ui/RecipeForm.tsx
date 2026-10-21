@@ -69,7 +69,7 @@ export function RecipeForm({ definition, initial, disabled = false, onSubmit }: 
 									[field.name]:
 										e.target.value === '' && !field.required
 											? null
-											: field.type === 'integer'
+											: field.type === 'integer' && e.target.value !== ''
 												? Number(e.target.value)
 												: e.target.value
 								})

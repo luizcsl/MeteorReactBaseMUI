@@ -10,16 +10,17 @@ const row = (id, title, extra = {}) => ({
 });
 const form = () => cy.get('form[aria-label="browserrecipes form"]');
 const save = () => form().contains('button', /^Save$/);
-const field = (label) =>
-	cy.document().then((document) => {
+// Re-query after React replaces a scoped form; actions require a jQuery subject, not a raw DOM snapshot.
+Cypress.Commands.addQuery('controlForLabel', function (label) {
+	return (document) => {
 		const element = [...document.querySelectorAll('label')].find(
 			(item) => item.textContent.replace(/\s*\*$/, '').trim() === label
 		);
-		expect(element, `label ${label}`).to.exist;
-		const control = element.control ?? document.getElementById(element.getAttribute('for'));
-		expect(control, `control for ${label}`).to.exist;
-		return cy.wrap(control);
-	});
+		const control = element?.control ?? document.getElementById(element?.getAttribute('for'));
+		return Cypress.$(control ?? []);
+	};
+});
+const field = (label) => cy.document().controlForLabel(label);
 const choose = (label, value) => {
 	field(label).click();
 	cy.get('[role="listbox"]')
@@ -92,7 +93,12 @@ describe('schema-driven recipe UI with a controlled remote client', () => {
 		form().find('[role="alert"]').should('contain.text', 'Unable to save');
 		calls('create', 0);
 		field('Title').clear().type('Valid title');
-		field('Quantity').clear().type('2.5');
+		field('Quantity').clear();
+		field('Quantity').should('have.value', '');
+		form().submit();
+		form().find('[role="alert"]').should('contain.text', 'Unable to save');
+		calls('create', 0);
+		field('Quantity').type('2.5');
 		form().submit();
 		form().find('[role="alert"]').should('contain.text', 'Unable to save');
 		calls('create', 0);
@@ -121,7 +127,9 @@ describe('schema-driven recipe UI with a controlled remote client', () => {
 		mount({ rows: [row('existing', 'Existing')], hold: ['create', 'update'] });
 		cy.get('article').should('have.length', 1);
 		field('Title').type('New record');
-		field('Quantity').clear().type('3');
+		field('Quantity').clear();
+		field('Quantity').should('have.value', '').type('3');
+		field('Quantity').should('have.value', '3');
 		cy.contains('label', /^Active$/)
 			.click()
 			.find('input')

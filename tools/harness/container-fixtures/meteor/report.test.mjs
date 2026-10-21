@@ -46,3 +46,27 @@ test('Meteor collector rejects missing, zero, failed, pending, insufficient and 
 	missingSuite.passes[0] = { fullTitle: 'unrelated' };
 	assert.throws(() => validateMeteorReport(missingSuite));
 });
+
+test('Meteor driver uses a bare CLI name and an exact, idempotent staged package constraint', async () => {
+	const fs = await import('node:fs');
+	const os = await import('node:os');
+	const path = await import('node:path');
+	const { meteorTestDriver, pinMeteorTestDriver, verifyMeteorTestDriver } = await import('./driver.mjs');
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'meteor-driver-'));
+	try {
+		fs.mkdirSync(path.join(temporary, '.meteor'));
+		const packages = path.join(temporary, '.meteor/packages');
+		fs.writeFileSync(packages, 'meteor-base@1.5.2\nmeteortesting:mocha@3.3.0\n');
+		pinMeteorTestDriver(temporary);
+		pinMeteorTestDriver(temporary);
+		assert.equal(meteorTestDriver, 'meteortesting:mocha');
+		assert.equal(fs.readFileSync(packages, 'utf8'), 'meteor-base@1.5.2\nmeteortesting:mocha@=3.4.0\n');
+		const versions = path.join(temporary, '.meteor/versions');
+		fs.writeFileSync(versions, 'meteortesting:mocha@3.4.0\n');
+		assert.doesNotThrow(() => verifyMeteorTestDriver(temporary));
+		fs.writeFileSync(versions, 'meteortesting:mocha@3.4.1\n');
+		assert.throws(() => verifyMeteorTestDriver(temporary));
+	} finally {
+		fs.rmSync(temporary, { recursive: true, force: true });
+	}
+});

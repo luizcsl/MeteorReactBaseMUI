@@ -42,7 +42,8 @@ actual disk/PID/memory exhaustion, output/clock limits and cancellation. Every
 started run must confirm container removal and emit a non-mock receipt.
 
 The Meteor image installs release 3.5.2 and the locked npm dependency tree, pins the
-Mocha driver to 3.4.0, records installer/release/Node/npm provenance, and warms the
+Mocha driver to 3.4.0 in staged package constraints (the CLI receives its bare
+package name), records installer/release/Node/npm provenance, and warms the
 real test suite while provisioning. Execution then copies the warehouse into a
 6 GiB bounded writable scratch mount, preserving relative symlinks, and overlays
 protected tests/configuration onto an ephemeral candidate copy. Candidate/verifier
