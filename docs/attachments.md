@@ -1,115 +1,53 @@
-# Anexos e uploads
+# Anexos privados e uploads
 
-O boilerplate usa `ostrio:files` por meio de
-[`attachmentsCollection.ts`](../imports/api/attachmentsCollection.ts). Os arquivos são privados: upload, consulta,
-download e remoção exigem usuário autenticado e são restringidos pelo `userId` gravado nos metadados.
+O adaptador `imports/api/attachmentsCollection.ts` usa `ostrio:files` com storage privado. Conta e perfil canônico precisam estar ativos. Nunca exponha `UPLOADS_DIR` como diretório estático público.
 
-## Configuração
+## Configuração e armazenamento
 
-| Variável           | Padrão                        | Finalidade                         |
-| ------------------ | ----------------------------- | ---------------------------------- |
-| `UPLOADS_DIR`      | `<cwd>/uploads/meteorUploads` | Diretório persistente dos arquivos |
-| `MAX_UPLOAD_BYTES` | `15728640` (15 MiB)           | Limite máximo por arquivo          |
+- `UPLOADS_DIR`: diretório privado persistente; padrão `<cwd>/uploads/meteorUploads`.
+- `MAX_UPLOAD_BYTES`: limite por arquivo, padrão 15 MiB.
+- `MEDIA_SIGNING_KEY`: segredo aleatório de pelo menos 48 caracteres, obrigatório em produção e igual nas réplicas. Não aparece nas URLs.
 
-Em containers, monte `UPLOADS_DIR` em volume persistente. O banco guarda metadados; copiar apenas o MongoDB não é um
-backup completo dos anexos.
+Faça backup consistente de Mongo e arquivos. Não existe opção suportada para desativar autorização. `DISABLE_MEDIA_TOKEN=true` impede a inicialização e os antigos links `?token=` não autorizam downloads.
 
-## Contrato de upload
+## Upload e quarentena
 
-O cliente não pode inserir diretamente na coleção (`allowClientCode: false`). O componente de upload envia o arquivo
-por meio do transporte do `ostrio:files` e deve incluir ao menos:
+O transporte `ostrio:files` recebe metadados `{ userId: Meteor.userId(), docId: documentoId }`. O servidor compara a identidade da conexão, exige conta/perfil ativo e valida extensão, MIME e tamanho. O campo `meta.contentValidated` é reservado ao servidor; valores do cliente são descartados.
 
-```ts
-const meta = {
-	userId: Meteor.userId(),
-	docId: documentoId
-};
-```
+Após receber o conteúdo, o servidor verifica assinaturas de formatos binários, texto e imagens. Imagens são inspecionadas por Sharp com limite de pixels, e somente PNG, JPEG, GIF e WebP passam pelo decodificador. BMP presente na allowlist histórica não é liberado pelo validador de conteúdo. SVG e HTML não são admitidos. Office/OpenDocument recebem inspeção de assinatura do contêiner, não validação semântica completa nem antivírus. Arquivos reprovados pelo transporte direto são removidos; arquivos legados ficam indisponíveis até uma revalidação explícita.
 
-O servidor confere se `meta.userId` é o usuário da conexão, se o tamanho está dentro do limite e se a combinação de
-extensão e MIME declarado está na allowlist. São aceitos atualmente imagens raster, PDF, texto/CSV, documentos Office e
-OpenDocument. SVG, HTML e compactados não são aceitos.
-
-Não use o valor de `meta.userId` enviado pelo navegador como autorização em código novo. A identidade confiável é
-sempre `this.userId`; o metadado serve para materializar o ownership depois da conferência do servidor.
+Implemente a política do documento/tenant no caso de uso antes de associar um upload a um registro de negócio. O adaptador genérico garante ownership individual, não memberships específicas de cada módulo.
 
 ## Listagem e remoção
 
-A publicação `files-attachments` recebe somente o identificador do documento e acrescenta o usuário ao seletor no
-servidor:
+`files-attachments` recebe `{ 'meta.docId': documentoId }`, acrescenta o proprietário no servidor e publica somente nome, tamanho, tipo, extensão e metadados de referência permitidos. Caminhos físicos e versões internas não são publicados. A assinatura é encerrada se o perfil for desativado ou removido.
 
-```ts
-const handle = Meteor.subscribe('files-attachments', {
-	'meta.docId': documentoId
-});
-```
+`Meteor.callAsync('RemoveFile', fileId)` exige conta/perfil ativo e ownership. Retorna `false` quando o arquivo não existe; acesso negado produz `not-authorized`.
 
-Ela publica apenas nome, tamanho, tipo, extensão, metadados e versões dos arquivos pertencentes ao usuário atual.
+## Downloads e validade das URLs
 
-Para remover um arquivo:
+Uma sessão autenticada do proprietário ativo pode acessar seu arquivo validado. Para um cliente HTTP sem sessão, uma operação de negócio já autorizada pode retornar `attachmentsCollection.getFileLink(doc)` no servidor. O link contém uma capacidade HMAC vinculada ao ID, versão original, operação de download e expiração de cinco minutos. Nunca devolva links de registros arbitrários sem autorizar sua leitura.
 
-```ts
-await Meteor.callAsync('RemoveFile', fileId);
-```
+A capacidade é bearer: pode ser compartilhada para aquele mesmo arquivo durante sua validade. Não autoriza outro arquivo ou versão. Desativar o proprietário revoga também links ainda válidos; uma sessão identificada de usuário inativo é recusada. URLs antigas ou expiradas devem ser renovadas pela API autorizada, nunca guardadas como endereço permanente do documento.
 
-O método valida autenticação e ownership antes da exclusão. Uma resposta `false` significa que o arquivo já não
-existia; falta de acesso produz `Meteor.Error('not-authorized')`.
+Respostas usam `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`, CSP restritiva e `Content-Disposition: attachment`. Isso também vale para documentos potencialmente ativos. Um aplicativo que mantém cópia offline assume a responsabilidade de isolá-la por conta, removê-la no logout e obedecer à política de retenção; headers não apagam cópias já baixadas.
 
-## Downloads
+Arquivos legados sem validação continuam bloqueados mesmo com uma URL recém-assinada. Veja [migração segura de mídia](media-migration.md) para dry-run, aprovação de lotes explícitos e quarentena sem ignorar a validação.
 
-Gere o link pela API do `ostrio:files` somente depois que o documento tiver sido recebido pela publicação autorizada.
-A opção `protected` volta a conferir o usuário no servidor quando o conteúdo é solicitado.
+## CSV gerado pelo backend
 
-Não monte URLs privadas manualmente, não persista links como se fossem públicos e não exponha o diretório de uploads
-por um servidor estático separado.
+`serverSaveCSVFile(file, fileName, ownerAccountId)` é exclusivamente interno. Exige uma conta proprietária ativa, cria nome confinado ao storage e retorna link com a mesma validade curta. Não exponha parâmetros arbitrários diretamente por DDP/HTTP.
 
-## Arquivos gerados no servidor
+## Example/Flutter: demonstração experimental
 
-`serverSaveCSVFile` é uma função interna para CSVs gerados pelo backend. Ela não deve ser chamada a partir de parâmetros
-arbitrários do cliente nem usada como modelo para anexos privados de usuário sem antes definir `meta.userId` e
-`meta.docId` corretos.
+O núcleo é online. A integração de sincronização do Example não representa um perfil offline-first de produção qualificado. Os caminhos de sync ficam bloqueados por padrão e exigem `EXPERIMENTAL_EXAMPLE_SYNC=true`; habilitar a variável não equivale a aprovar segurança, testes em dispositivos ou isolamento multi-tenant.
 
-## Integração offline-first com Flutter
+O código experimental inclui pull com cursores compostos, tombstones, leitura autorizada e upsert com revisão/CAS e `mutationId`. Contratos antigos que enviam apenas `baseVersion` ou tratam links como permanentes precisam migrar. As rotas legadas `/img` e `/audio` não fornecem mais acesso pelo token global. Use anexos privados validados; não dependa de mídia base64 legada.
 
-O módulo `Example` expõe um contrato DDP adicional para clientes mobile. O Flutter gera o `_id` antes de sincronizar,
-mantém documentos e metadados em SQLite e usa estes métodos:
+O upload em partes informa `assetId`, `exampleId`, `name`, `mimeType`, `kind`, `size`, `checksum`, `offset`, `data` base64 e `isLast`. Cada bloco tem até 192 KiB. Metadados não podem mudar durante o upload; reenvio deve corresponder aos bytes já escritos. Há exclusão mútua entre processos, validação de tamanho/SHA-256/conteúdo antes da promoção, limite de três uploads incompletos por usuário e 100 por staging store, e expiração após uma hora de inatividade. A limpeza ocorre na próxima atividade de upload.
 
-| Método                     | Responsabilidade                                                         |
-| -------------------------- | ------------------------------------------------------------------------ |
-| `example.mobilePull`       | Alterações incrementais e tombstones, paginados por `lastupdate`         |
-| `example.mobileGet`        | Snapshot completo usado na resolução de conflito                         |
-| `example.mobileUpsert`     | Insert/update idempotente com controle otimista por `baseVersion`        |
-| `example.mobileAssetsPage` | Catálogo paginado de imagens, áudios, anexos e mídias legadas            |
-| `example.uploadAssetChunk` | Upload retomável em blocos de até 192 KiB, validado por offset e SHA-256 |
-| `example.removeAsset`      | Remoção idempotente de um asset autorizado                               |
+O staging local exige roteamento aderente à mesma instância ou store privado compartilhado. Não é um protocolo distribuído de object storage. Se um processo cair segurando o lock, a recuperação é fail-closed e exige a manutenção documentada em [media-migration.md](media-migration.md), não a remoção automática do lock enquanto houver escritores.
 
-Há três categorias de asset: `image`, `audio` e `attachment`. Imagens e áudios podem ser baixados automaticamente pelo
-app para uso offline; anexos sincronizam metadados e URL e são baixados sob demanda. Os campos base64 legados `image` e
-`audio` continuam disponíveis no catálogo por URLs `/img` e `/audio`, mas não são enviados dentro de `mobilePull`.
+## Limites de qualificação
 
-O upload mobile deve informar `assetId`, `exampleId`, `name`, `mimeType`, `kind`, `size`, `checksum`, `offset`, `data`
-(base64) e `isLast`. O servidor mantém o `.part` em diretório temporário isolado por usuário/documento, confirma o
-próximo offset e só promove o arquivo ao storage persistente depois de validar tamanho e SHA-256.
-
-As URLs retornadas no catálogo carregam `MEDIA_ACCESS_TOKEN` quando a proteção está ativa, inclusive para arquivos do
-`ostrio:files`. Isso permite que o cliente HTTP do Flutter faça streaming sem tornar o diretório de uploads público. Em
-produção, configure um token estável; caso ele mude após reiniciar o servidor, URLs guardadas no cache mobile deixam de
-ser válidas até o próximo `mobileAssetsPage`.
-
-Ao excluir um Example, o backend grava um tombstone e remove seus assets. Mantenha os índices de `lastupdate`,
-`deletedAt/documentId` e `meta.docId/meta.fieldName/uploadedAt`, criados em `imports/server/databaseIndexes.ts`.
-
-### Fluxo de validação
-
-1. Salve um Example na Web com imagem, áudio gravado e PDF.
-2. Sincronize no Flutter e confirme imagem/áudio offline e PDF sob demanda.
-3. No Flutter offline, edite o documento e adicione mídia; reconecte e confirme o upload retomável na Web.
-4. Edite o mesmo registro na Web e no Flutter antes de sincronizar e confirme o erro `sync-conflict`.
-5. Exclua mídia e o documento em cada cliente e confirme a remoção no outro após `mobilePull`.
-
-## Limitações conhecidas
-
-A validação atual compara extensão e MIME declarado, mas ainda não verifica magic bytes nem executa antivírus. Para
-contextos com arquivos não confiáveis, adicione inspeção do conteúdo durante o streaming, quarentena, scanner e limites
-de quantidade/cota por usuário. Downloads vinculados a tenant ou documento de negócio também devem validar esse escopo,
-além do ownership individual.
+Ainda são necessários scanner de malware quando aplicável, quota persistente por usuário/tenant, políticas específicas de documentos, testes de dispositivos offline e qualificação do armazenamento distribuído. Os testes de mídia incluem HTTP real para expiração, acesso cruzado, cache privado e revogação; só resultados efetivamente executados no ambiente de release constituem evidência de qualificação.

@@ -10,7 +10,6 @@ import { countsCollection } from '../api/countCollection';
 import { Validador } from '../libs/Validador';
 import { segurancaApi } from '../security/api/segurancaApi';
 import { WebApp } from 'meteor/webapp';
-import { randomBytes } from 'crypto';
 // @ts-ignore
 import bodyParser from 'body-parser';
 // @ts-ignore
@@ -31,8 +30,6 @@ const maxCounterLimit = Number(process.env.MAX_COUNTER_LIMIT || 10000);
 const maxExportLimit = Number(process.env.MAX_EXPORT_LIMIT || 5000);
 const maxThumbnailDimension = Number(process.env.MAX_THUMBNAIL_DIMENSION || 1200);
 const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '5mb';
-const mediaAccessToken = encodeURIComponent(process.env.MEDIA_ACCESS_TOKEN || randomBytes(32).toString('hex'));
-const mediaTokenEnabled = process.env.DISABLE_MEDIA_TOKEN !== 'true';
 
 const absoluteOrigin = new URL(Meteor.absoluteUrl()).origin;
 const allowedCorsOrigins = (process.env.CORS_ORIGINS || '')
@@ -47,7 +44,9 @@ if (process.env.NODE_ENV !== 'production') {
 allowedCorsOrigins.forEach((origin) => defaultAllowedCorsOrigins.add(origin));
 
 const clampLimit = (limit: number | undefined, defaultLimit = maxPublicationLimit, maxLimit = maxPublicationLimit) => {
-	if (limit === 0) return 0;
+	if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
+		throw new Meteor.Error('validation-error', 'Limit must be a positive integer.');
+	}
 	if (!limit || limit < 0) return defaultLimit;
 	return Math.min(limit, maxLimit);
 };
@@ -130,19 +129,17 @@ const parseThumbnailDimension = (value: string | undefined) => {
 	return [clampDimension(width) || 200, clampDimension(height) || 200];
 };
 
-export const getMediaAccessQuery = () => (mediaTokenEnabled ? `token=${mediaAccessToken}&` : '');
-
-const isMediaRequestAllowed = (req: any) => {
-	if (!mediaTokenEnabled) return true;
-	return req?.query?.token === mediaAccessToken || req?.headers?.['x-media-token'] === mediaAccessToken;
-};
+// Legacy inline-media routes are retired. Private media must use resource-bound attachment capabilities.
+export const getMediaAccessQuery = () => '';
+const isMediaRequestAllowed = (_req: unknown) => false;
 
 const writeMediaAccessDenied = (res: any) => {
 	res.writeHead(403, { 'Content-Type': 'text/plain' });
 	res.end('Access denied');
 };
 
-const isAdmin = (user?: IUserProfile | null) => user?.roles?.includes('Administrador') || false;
+const isAdmin = (user?: IUserProfile | null) =>
+	user?.status !== 'disabled' && (user?.roles?.includes('Administrador') || false);
 
 WebApp.connectHandlers.use(
 	'/api',
@@ -351,12 +348,24 @@ export class ServerApiBase<Doc extends IDoc> {
 	/**
 	 * @returns {String} - Return the number of documents from a collection.
 	 */
-	async countDocuments(_context?: IContext) {
-		if (_context && this.defaultResources && this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]) {
-			segurancaApi.validarAcessoRecursos(_context.user, [
-				this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]
-			]);
+	protected assertNoLegacyTransaction(context?: IContext) {
+		if (context?.session) {
+			throw new Meteor.Error(
+				'transaction-repository-required',
+				'Legacy CRUD hooks are not transaction-safe. Use the transactional repository.'
+			);
 		}
+	}
+
+	protected requireResource(action: 'VIEW' | 'CREATE' | 'UPDATE' | 'REMOVE') {
+		const resource = this.defaultResources?.[`${this.collectionName?.toUpperCase()}_${action}`];
+		if (!resource) throw new Meteor.Error('missing-policy', 'An explicit resource policy is required.');
+		return resource;
+	}
+
+	async countDocuments(_context?: IContext) {
+		if (!_context?.user) throw new Meteor.Error('not-authorized');
+		segurancaApi.validarAcessoRecursos(_context.user, [this.requireResource('VIEW')]);
 		return await this.getCollectionInstance().find().countAsync();
 	}
 
@@ -1129,10 +1138,7 @@ export class ServerApiBase<Doc extends IDoc> {
 
 	defaultCounterCollectionPublication = (collection: any, publishName: string) =>
 		async function (this: { added: Function; ready: Function }, ...params: any) {
-			let handlePub = await collection.publications[publishName].apply(this, [
-				...params,
-				{ limit: maxCounterLimit }
-			]);
+			let handlePub = await collection.publications[publishName].apply(this, [...params, { limit: maxCounterLimit }]);
 			if (Array.isArray(handlePub)) handlePub = handlePub[0];
 			const count = handlePub ? await handlePub.countAsync(false) : 0;
 			// Counter snapshots avoid one long-lived Mongo observer per subscriber.
@@ -1143,7 +1149,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	async defaultListCollectionPublication(filter = {}, optionsPub: Partial<IMongoOptions<Doc>>) {
 		const user = await getUserServer();
 
-		if (this.defaultResources && this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]) {
+		if (this.requireResource('VIEW')) {
 			if (!segurancaApi.podeAcessarRecurso(user, this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`])) {
 				// throw new Meteor.Error(
 				//     `erro.${this.collectionName}Api.permissaoInsuficiente`,
@@ -1163,7 +1169,7 @@ export class ServerApiBase<Doc extends IDoc> {
 
 	async defaultDetailCollectionPublication(filter: Partial<IDoc>, optionsPub: Partial<IMongoOptions<Doc>>) {
 		const user = await getUserServer();
-		if (this.defaultResources && this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]) {
+		if (this.requireResource('VIEW')) {
 			if (!segurancaApi.podeAcessarRecurso(user, this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`])) {
 				// throw new Meteor.Error(
 				//     `erro.${this.collectionName}Api.permissaoInsuficiente`,
@@ -1186,7 +1192,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param  {String} name - Name of the new Meteor Method.
 	 * @param  {Function} func - Function to use in the Meteor Method.
 	 */
-	registerMethod = (name: string, func: Function) => {
+	registerMethod = (name: string, func: Function, argumentCount = 1, minimumArguments = argumentCount) => {
 		const self = this;
 		const action = name;
 		const collection = this.collectionName || '';
@@ -1194,7 +1200,12 @@ export class ServerApiBase<Doc extends IDoc> {
 		const schema = this.schema;
 
 		const method = {
-			async [methodFullName](...param: any[]) {
+			async [methodFullName](...param: unknown[]) {
+				if (param.length < minimumArguments || param.length > argumentCount) {
+					throw new Meteor.Error('invalid-arguments', 'Invalid method argument count.');
+				}
+				// Always place trusted context at the declared position, never after attacker-selected arguments.
+				while (param.length < argumentCount) param.push(undefined);
 				console.info('CALL Method:', name, param ? param.length : '-');
 				// Prevent unauthorized access
 
@@ -1223,7 +1234,7 @@ export class ServerApiBase<Doc extends IDoc> {
 		}
 	};
 
-	registerTransactionMethod = (name: string, func: Function) => {
+	registerTransactionMethod = (name: string, func: Function, argumentCount = 1, minimumArguments = argumentCount) => {
 		const self = this;
 		const action = name;
 		const collection = this.collectionName || '';
@@ -1231,7 +1242,12 @@ export class ServerApiBase<Doc extends IDoc> {
 		const schema = this.schema;
 
 		const method = {
-			async [methodFullName](...param: any[]) {
+			async [methodFullName](...param: unknown[]) {
+				if (param.length < minimumArguments || param.length > argumentCount) {
+					throw new Meteor.Error('invalid-arguments', 'Invalid method argument count.');
+				}
+				// Always place trusted context at the declared position, never after attacker-selected arguments.
+				while (param.length < argumentCount) param.push(undefined);
 				const selfMeteor = this;
 				console.log('CALL Transaction Method:', name, param ? Object.keys(param) : '-');
 				// Prevent unauthorized access
@@ -1276,13 +1292,13 @@ export class ServerApiBase<Doc extends IDoc> {
 		this.registerMethod('remove', this.serverRemove);
 		this.registerMethod('upsert', this.serverUpsert);
 		this.registerMethod('sync', this.serverSync);
-		this.registerMethod('countDocuments', this.countDocuments);
-		this.registerMethod('getDocs', this.serverGetDocs);
-		this.registerMethod('exportCollection', this.exportCollection);
+		this.registerMethod('countDocuments', this.countDocuments, 0);
+		this.registerMethod('getDocs', this.serverGetDocs, 3, 0);
+		this.registerMethod('exportCollection', this.exportCollection, 0);
 	}
 
 	exportCollection = async (_context: IContext) => {
-		if (!isAdmin(_context?.user) && process.env.ALLOW_COLLECTION_EXPORT !== 'true') {
+		if (!isAdmin(_context?.user)) {
 			throw new Meteor.Error('Acesso negado', 'Somente administradores podem exportar coleções.');
 		}
 
@@ -1295,42 +1311,11 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param _docObj
 	 * @param _context
 	 */
-	async serverSync(_docObj: Doc | Partial<Doc>, _context: IContext) {
-		if (!_docObj || !_docObj._id) {
-			return false;
-		}
-
-		const oldDoc = await this.getCollectionInstance().findOneAsync({ _id: _docObj._id });
-
-		if (
-			!(
-				((!oldDoc || !oldDoc._id) && (await this.beforeInsert(_docObj, _context))) ||
-				(await this.beforeUpdate(_docObj, _context))
-			)
-		) {
-			return false;
-		}
-
-		if (!oldDoc || !oldDoc._id) {
-			_docObj = this._checkDataBySchema(_docObj, this.auditFields);
-			await this._includeAuditData(_docObj, 'insert');
-			const insertId = await this.getCollectionInstance().insertAsync(_docObj);
-			return { _id: insertId, ..._docObj };
-		}
-		let docToSave;
-		if (!!_docObj.lastupdate && !!oldDoc.lastupdate && new Date(_docObj.lastupdate) > new Date(oldDoc.lastupdate)) {
-			docToSave = _docObj;
-		} else {
-			docToSave = oldDoc;
-		}
-
-		docToSave = this._checkDataBySchema(docToSave, this.auditFields);
-		await this._includeAuditData(docToSave, 'update');
-
-		await this.getCollectionInstance().updateAsync(_docObj._id, {
-			$set: docToSave
-		});
-		return await this.getCollectionInstance().findOneAsync({ _id: _docObj._id });
+	async serverSync(_docObj: Doc | Partial<Doc>, _context: IContext): Promise<never> {
+		throw new Meteor.Error(
+			'sync-protocol-required',
+			'Legacy timestamp-only sync is disabled. Use a versioned mutation with mutationId.'
+		);
 	}
 
 	/**
@@ -1339,6 +1324,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param  {Object} _context - Meteor this _context.
 	 */
 	async serverInsert(_docObj: Doc | Partial<Doc>, _context: IContext) {
+		this.assertNoLegacyTransaction(_context);
 		try {
 			const id = _docObj._id;
 			if (await this.beforeInsert(_docObj, _context)) {
@@ -1373,10 +1359,8 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @returns {Boolean} - Returns true for any action.
 	 */
 	async beforeInsert(_docObj: Doc | Partial<Doc>, _context: IContext) {
-		const resource = this.defaultResources?.[`${this.collectionName?.toUpperCase()}_CREATE`];
-		if (resource) {
-			segurancaApi.validarAcessoRecursos(_context.user, [resource]);
-		}
+		this.assertNoLegacyTransaction(_context);
+		segurancaApi.validarAcessoRecursos(_context?.user, [this.requireResource('CREATE')]);
 
 		return true;
 	}
@@ -1388,7 +1372,10 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param _context
 	 * @returns {Object} - Object updated with the current status.
 	 */
-	async afterInsert(_docObj: Doc | Partial<Doc>, _context?: IContext) {
+	async afterInsert(
+		_docObj: Doc | Partial<Doc>,
+		_context?: IContext
+	): Promise<void | (Partial<Doc> & { collection: string | null })> {
 		return {
 			..._docObj,
 			collection: this.collectionName
@@ -1403,6 +1390,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param  {Object} _context - Meteor this _context.
 	 */
 	async serverUpsert(_docObj: Doc | Partial<Doc>, _context: IContext) {
+		this.assertNoLegacyTransaction(_context);
 		const objCollection = await this.getCollectionInstance().findOneAsync({ _id: _docObj._id });
 		if (!objCollection) {
 			return await this.serverInsert(_docObj, _context);
@@ -1429,6 +1417,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param  {Object} _context - Meteor this _context.
 	 */
 	async serverUpdate(_docObj: Doc | Partial<Doc>, _context: IContext) {
+		this.assertNoLegacyTransaction(_context);
 		try {
 			check(_docObj._id, String);
 			const id = _docObj._id;
@@ -1469,10 +1458,8 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @returns {Boolean} - Returns true for any action.
 	 */
 	async beforeUpdate(_docObj: Doc | Partial<Doc>, _context: IContext) {
-		const resource = this.defaultResources?.[`${this.collectionName?.toUpperCase()}_UPDATE`];
-		if (resource) {
-			segurancaApi.validarAcessoRecursos(_context.user, [resource]);
-		}
+		this.assertNoLegacyTransaction(_context);
+		segurancaApi.validarAcessoRecursos(_context?.user, [this.requireResource('UPDATE')]);
 		return true;
 	}
 
@@ -1516,6 +1503,7 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param  {Object} _context - Meteor this _context.
 	 */
 	async serverRemove(_docObj: Doc | Partial<Doc>, _context: IContext) {
+		this.assertNoLegacyTransaction(_context);
 		try {
 			if (await this.beforeRemove(_docObj, _context)) {
 				const id = _docObj._id;
@@ -1543,10 +1531,8 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @returns {Boolean} - Returns true for any action.
 	 */
 	async beforeRemove(_docObj: Doc | Partial<Doc>, _context: IContext) {
-		const resource = this.defaultResources?.[`${this.collectionName?.toUpperCase()}_REMOVE`];
-		if (resource) {
-			segurancaApi.validarAcessoRecursos(_context.user, [resource]);
-		}
+		this.assertNoLegacyTransaction(_context);
+		segurancaApi.validarAcessoRecursos(_context?.user, [this.requireResource('REMOVE')]);
 		return true;
 	}
 
@@ -1557,7 +1543,10 @@ export class ServerApiBase<Doc extends IDoc> {
 	 * @param _context
 	 * @returns {Object} - Object updated with the current status.
 	 */
-	async afterRemove(_docObj: Doc | Partial<Doc>, _context: IContext) {
+	async afterRemove(
+		_docObj: Doc | Partial<Doc>,
+		_context: IContext
+	): Promise<void | (Partial<Doc> & { collection: string | null })> {
 		return {
 			..._docObj,
 			collection: this.collectionName
@@ -1578,7 +1567,7 @@ export class ServerApiBase<Doc extends IDoc> {
 			throw new Meteor.Error('Publicação inválida', `A publicação "${publicationName}" não existe.`);
 		}
 
-		if (this.defaultResources && this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]) {
+		if (this.requireResource('VIEW')) {
 			segurancaApi.validarAcessoRecursos(_context.user, [
 				this.defaultResources[`${this.collectionName?.toUpperCase()}_VIEW`]
 			]);

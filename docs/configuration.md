@@ -4,7 +4,7 @@ Use variáveis de ambiente para segredos e opções operacionais. `settings.json
 credenciais reais; tudo dentro de `Meteor.settings.public` é enviado ao navegador.
 
 O startup valida URLs, conjuntos de credenciais e limites principais. Em produção ele encerra cedo quando faltam
-`ROOT_URL`, `MONGO_URL` ou um `MEDIA_ACCESS_TOKEN` forte, ou quando CORS contém `*`.
+`ROOT_URL`, `MONGO_URL` ou um `MEDIA_SIGNING_KEY` forte, ou quando CORS contém `*`.
 
 ## Aplicação e infraestrutura
 
@@ -17,7 +17,7 @@ O startup valida URLs, conjuntos de credenciais e limites principais. Em produç
 | `APP_NAME`           | não         | `MeteorReactBase-MUI`                                     |
 | `APP_SHORT_NAME`     | não         | `MRB`                                                     |
 | `APP_SERVICE_NAME`   | não         | nome usado pelo backend                                   |
-| `MEDIA_ACCESS_TOKEN` | em produção | segredo compartilhado com pelo menos 32 caracteres        |
+| `MEDIA_SIGNING_KEY` | em produção | segredo compartilhado com pelo menos 32 caracteres        |
 | `UPLOADS_DIR`        | não         | `<cwd>/uploads/meteorUploads`                             |
 
 O token de mídia atual é uma proteção transitória de endpoints legados. Mantenha o mesmo valor em todas as réplicas e

@@ -1,0 +1,10 @@
+# Review gates and security changes independently. Branch protection is configured in GitHub, not by this file.
+/AGENTS.md @luizcsl
+/.github/ @luizcsl
+/tools/ @luizcsl
+/evals/ @luizcsl
+/imports/core/ @luizcsl
+/imports/api/serverBase.ts @luizcsl
+/imports/api/attachmentsCollection.ts @luizcsl
+/imports/server/ @luizcsl
+/tests/ @luizcsl

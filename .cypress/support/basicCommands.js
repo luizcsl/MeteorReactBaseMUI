@@ -137,8 +137,8 @@ class BasicCommands {
     },
     menu: {
       openMenu: (name) => {
-        this.utils.isEnabledAndVisible(`[aria-label="${pathName}"]`);
-        cy.get(`[aria-label="${pathName}"]`).click();
+        this.utils.isEnabledAndVisible(`[aria-label="${name}"]`);
+        cy.get(`[aria-label="${name}"]`).click();
         cy.wait(200);
       },
     },
@@ -259,25 +259,5 @@ class BasicCommands {
   };
 
 }
-
-for (const command of [
-    'visit',
-    'click',
-    'trigger',
-    'type',
-    'clear',
-    'reload',
-    'contains',
-  ]) {
-    Cypress.Commands.overwrite(command, (originalFn, ...args) => {
-      const origVal = originalFn(...args);
-
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve(origVal);
-        }, 2000);
-      });
-    });
-  }
 
 export const basicCommands = new BasicCommands();

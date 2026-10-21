@@ -28,9 +28,6 @@ const ALLOWED_UPLOADS: Record<string, ReadonlySet<string>> = {
 	ods: new Set(['application/vnd.oasis.opendocument.spreadsheet'])
 };
 
-const attachmentMediaToken = Meteor.isServer ? process.env.MEDIA_ACCESS_TOKEN || Random.id(43) : '';
-const attachmentMediaTokenEnabled = process.env.DISABLE_MEDIA_TOKEN !== 'true';
-
 const normalizeMimeType = (mimeType: unknown) =>
 	String(mimeType || '')
 		.split(';', 1)[0]
@@ -81,11 +78,20 @@ class AttachmentsCollection {
 		this.attachments = new FilesCollection({
 			collectionName: 'Attachments',
 			allowClientCode: false,
+			public: false,
+			cacheControl: 'private, no-store, max-age=0',
+			permissions: 0o600,
+			parentDirPermissions: 0o700,
+			continueUploadTTL: 3600,
 			// Mudar a cada versão
 			// ToDo Colocar em uma variável de ambiente
 			storagePath: uploadPaths,
-			onBeforeUpload(file: any) {
+			async onBeforeUpload(file: any) {
+				if (Meteor.isServer && !(await require('../server/mediaAccount').isActiveMediaAccount(this.userId)))
+					return 'Conta inativa.';
 				const ownerMatches = Boolean(this.userId && file.meta?.userId === this.userId);
+				// Validation markers are server-owned, never accepted from client metadata.
+				if (file.meta) delete file.meta.contentValidated;
 				const allowed = isAllowedAttachment({
 					name: file.name,
 					extension: file.extension,
@@ -96,13 +102,34 @@ class AttachmentsCollection {
 				if (ownerMatches && file.size > 0 && allowed) return true;
 				return 'Arquivo não autorizado, tipo inválido ou tamanho acima do limite.';
 			},
-			protected(file: any) {
-				const token = (this.params as any)?.query?.token;
+			responseHeaders: {
+				'Cache-Control': 'private, no-store, max-age=0',
+				'X-Content-Type-Options': 'nosniff',
+				'Content-Security-Policy': "default-src 'none'; sandbox",
+				'Content-Disposition': 'attachment'
+			},
+			async onAfterUpload(this: FilesCollection, file: any) {
+				if (!Meteor.isServer) return;
+				try {
+					await require('../server/mediaContent').validateMediaContent(
+						file.path,
+						normalizeMimeType(file.type),
+						file.size
+					);
+					await this.collection.updateAsync(file._id, { $set: { 'meta.contentValidated': true } });
+				} catch {
+					await this.removeAsync(file._id);
+				}
+			},
+			async protected(file: any) {
+				if (!Meteor.isServer || file?.meta?.contentValidated !== true) return false;
+				if (!(await require('../server/mediaAccount').isActiveMediaAccount(file.meta?.userId))) return false;
+				if (this.userId && !(await require('../server/mediaAccount').isActiveMediaAccount(this.userId))) return false;
+				const token = (this.params as any)?.query?.capability;
+				const version = (this.params as any)?.version || 'original';
+				if (version !== 'original') return false;
 				const ownerMatches = Boolean(this.userId && file?.meta?.userId === this.userId);
-				const tokenMatches = Boolean(
-					attachmentMediaTokenEnabled && attachmentMediaToken && token === attachmentMediaToken
-				);
-				return !attachmentMediaTokenEnabled || ownerMatches || tokenMatches;
+				return ownerMatches || require('../server/mediaAuthorization').verifyMediaCapability(token, file._id, version);
 			}
 		});
 		this.applyPublication();
@@ -115,7 +142,8 @@ class AttachmentsCollection {
 			Meteor.methods({
 				async RemoveFile(id) {
 					check(id, String);
-					if (!this.userId) throw new Meteor.Error('not-authorized', 'Autenticação obrigatória.');
+					if (!(await require('../server/mediaAccount').isActiveMediaAccount(this.userId)))
+						throw new Meteor.Error('not-authorized', 'Conta ativa obrigatória.');
 					const file = await self.attachments.collection.findOneAsync({ _id: id });
 					if (!file) return false;
 					if (file.meta?.userId !== this.userId)
@@ -125,12 +153,16 @@ class AttachmentsCollection {
 				}
 			});
 
-			Meteor.publish('files-attachments', function (filter) {
+			Meteor.publish('files-attachments', async function (filter) {
 				check(filter, Match.ObjectIncluding({ 'meta.docId': String }));
-				if (!this.userId) return this.ready();
+				if (!(await require('../server/mediaAccount').isActiveMediaAccount(this.userId))) return this.ready();
+				const watch = await require('../server/mediaAccount').watchMediaAccount(this.userId, () => this.stop());
+				this.onStop(() => watch.stop());
 				return self.attachments.collection.find(
 					{ 'meta.docId': filter['meta.docId'], 'meta.userId': this.userId },
-					{ fields: { name: 1, size: 1, type: 1, extension: 1, meta: 1, versions: 1 } }
+					{
+						fields: { name: 1, size: 1, type: 1, extension: 1, 'meta.docId': 1, 'meta.userId': 1, 'meta.fieldName': 1 }
+					}
 				);
 			});
 		}
@@ -174,9 +206,11 @@ class AttachmentsCollection {
 
 	getFileLink = (doc: any) => {
 		if (!doc?._id || !doc?.name) return null;
-		const route = doc._downloadRoute || '/cdn/storage';
-		const collection = doc._collectionName || 'Attachments';
-		const tokenQuery = attachmentMediaTokenEnabled ? `?token=${encodeURIComponent(attachmentMediaToken)}` : '';
+		const route = '/cdn/storage';
+		const collection = 'Attachments';
+		const tokenQuery = Meteor.isServer
+			? `?capability=${encodeURIComponent(require('../server/mediaAuthorization').createMediaCapability(doc._id))}`
+			: '';
 		return `${Meteor.absoluteUrl()}${route.replace(/^\//, '')}/${collection}/${doc._id}/original/${encodeURIComponent(doc.name)}${tokenQuery}`;
 	};
 
@@ -206,15 +240,16 @@ class AttachmentsCollection {
 			throw new Meteor.Error('invalid-upload', 'Tipo, extensão ou tamanho do arquivo não permitido.');
 		}
 
+		if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) throw new Meteor.Error('invalid-upload', 'ID inválido.');
+		await require('../server/mediaContent').validateMediaContent(tempPath, type, size);
 		const finalPath = path.join(uploadPaths, `${id}-${safeName}`);
+		let createdFile = false;
 		try {
-			try {
-				await fs.rename(tempPath, finalPath);
-			} catch (error: any) {
-				if (error?.code !== 'EXDEV') throw error;
-				await fs.copyFile(tempPath, finalPath);
-				await fs.unlink(tempPath);
-			}
+			// Never overwrite an existing object's bytes, including concurrent retries.
+			await fs.copyFile(tempPath, finalPath, require('fs').constants.COPYFILE_EXCL);
+			createdFile = true;
+			await fs.chmod(finalPath, 0o600);
+			await fs.unlink(tempPath);
 			const stat = await fs.stat(finalPath);
 			if (size !== stat.size) {
 				throw new Meteor.Error('upload-size-mismatch', 'O tamanho final do arquivo não confere.');
@@ -228,7 +263,7 @@ class AttachmentsCollection {
 				extensionWithDot: extension ? `.${extension}` : '',
 				uploadedAt: new Date(),
 				path: finalPath,
-				meta: meta || {},
+				meta: { ...meta, contentValidated: true },
 				versions: { original: { path: finalPath, size: stat.size, type, extension } },
 				_downloadRoute: '/cdn/storage',
 				_collectionName: 'Attachments',
@@ -245,7 +280,7 @@ class AttachmentsCollection {
 			await this.serverInsert(fileDoc);
 			return { ...fileDoc, url: this.getFileLink(fileDoc) };
 		} catch (error) {
-			await fs.unlink(finalPath).catch(() => undefined);
+			if (createdFile) await fs.unlink(finalPath).catch(() => undefined);
 			throw error;
 		}
 	};
@@ -262,10 +297,12 @@ class AttachmentsCollection {
 		return docFile?.path || null;
 	};
 
-	serverSaveCSVFile = async (file: string | Buffer, fileName?: string) => {
+	serverSaveCSVFile = async (file: string | Buffer, fileName?: string, ownerAccountId?: string) => {
 		if (Meteor.isServer) {
+			if (!(await require('../server/mediaAccount').isActiveMediaAccount(ownerAccountId)))
+				throw new Meteor.Error('not-authorized', 'Conta ativa obrigatória.');
 			const fileId = Random.id();
-			const nameFile = `${fileName ? fileName : fileId}.csv`;
+			const nameFile = `${fileId}-${String(fileName || 'export').replace(/[^A-Za-z0-9._-]/g, '_')}.csv`;
 			const fs = require('fs').promises;
 			await fs.writeFile(`${uploadPaths}/${nameFile}`, file);
 			const fileStat = await fs.stat(`${uploadPaths}/${nameFile}`);
@@ -273,10 +310,11 @@ class AttachmentsCollection {
 				_id: fileId,
 				name: nameFile,
 				size: fileStat.size,
-				path: `${uploadPaths}/${nameFile}`
+				path: `${uploadPaths}/${nameFile}`,
+				meta: { contentValidated: true, userId: ownerAccountId }
 			};
 			await this.serverInsert(this.getAttachmentDoc(fileData));
-			return `${Meteor.absoluteUrl()}cdn/storage/Attachments/${fileId}/original/${nameFile}`;
+			return this.getFileLink({ _id: fileId, name: nameFile });
 		}
 	};
 

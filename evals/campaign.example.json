@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "campaignId": "REPLACE-before-running",
+  "phase": "functional-pilot",
+  "seed": 1729,
+  "repetitions": 1,
+  "taskIds": [
+    "crud-contacts",
+    "crud-inventory",
+    "crud-projects",
+    "crud-search",
+    "crud-validation",
+    "crud-roles",
+    "crud-optimistic",
+    "crud-audit",
+    "security-context",
+    "security-earlyreturn",
+    "security-media",
+    "security-projection",
+    "security-limits",
+    "security-export",
+    "ui-states",
+    "ui-form",
+    "ui-conflict",
+    "ui-responsive",
+    "data-sync-cursor",
+    "data-sync-cas",
+    "data-sync-replay",
+    "data-sync-offline",
+    "integrations-files-upload",
+    "integrations-files-webhook",
+    "integrations-files-mail",
+    "integrations-files-cleanup",
+    "regressions-async",
+    "regressions-status",
+    "regressions-bootstrap",
+    "regressions-scaffold"
+  ],
+  "arms": {
+    "original": {
+      "commit": "REPLACE-with-full-commit",
+      "description": "Original upstream, without additional AI guidance"
+    },
+    "docs": {
+      "commit": "REPLACE-with-full-commit",
+      "description": "Same baseline plus documentation and agent rules only"
+    },
+    "contracts": {
+      "commit": "REPLACE-with-full-commit",
+      "description": "Executable contracts and deterministic toolkit"
+    }
+  },
+  "model": {
+    "provider": "REPLACE",
+    "name": "REPLACE",
+    "version": "REPLACE",
+    "temperature": 0
+  },
+  "harness": {
+    "name": "external-optional",
+    "version": "REPLACE"
+  },
+  "results": []
+}

@@ -2,7 +2,7 @@
 
 Existem duas camadas independentes:
 
-- `jam:offline`/`jam:archive`: fila e recuperação de operações Meteor;
+- cliente online-first: chamadas desconectadas falham explicitamente; `jam:offline` e `jam:archive` não estão instalados;
 - [`public/sw.js`](../public/sw.js): cache controlado de assets públicos e fallback de navegação.
 
 O service worker não transforma DDP nem dados autenticados em uma aplicação totalmente offline.
@@ -49,7 +49,7 @@ também mostra uma confirmação nativa. Ao aceitar, o worker recebe `SKIP_WAITI
 
 Essa confirmação evita combinar HTML antigo com chunks novos durante uma sessão ativa.
 
-## Operações Meteor offline
+## Perfil offline futuro (não instalado)
 
 A fila de métodos deve conter operações idempotentes ou um identificador de deduplicação. Não assuma que ordem,
 autorização ou estado permanecem iguais durante uma desconexão longa. Ao reconectar:

@@ -1,0 +1,72 @@
+name: Browser qualification
+on:
+  pull_request:
+  push:
+    branches: [main, master, 'feat/**']
+permissions:
+  contents: read
+concurrency:
+  group: browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  canonical-owner-crud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies and browser
+        run: npm ci
+      - name: Install pinned Meteor release
+        run: |
+          curl --fail --show-error --silent 'https://install.meteor.com/?release=3.5' -o /tmp/install-meteor.sh
+          sh /tmp/install-meteor.sh
+          echo "$HOME/.meteor" >> "$GITHUB_PATH"
+      - name: Qualify canonical CRUD against disposable local application
+        shell: bash
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          export DEFAULT_ADMIN_USERNAME=BrowserQualification
+          export DEFAULT_ADMIN_EMAIL=browser-qualification@example.test
+          export DEFAULT_ADMIN_PASSWORD="$password"
+          export CYPRESS_TEST_USER_EMAIL="$DEFAULT_ADMIN_EMAIL"
+          export CYPRESS_TEST_USER_PASSWORD="$password"
+          export CYPRESS_BASE_URL=http://127.0.0.1:3200
+          export ROOT_URL="$CYPRESS_BASE_URL"
+          mkdir -p .ai-artifacts
+          meteor run --port 3200 > .ai-artifacts/browser-app.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in $(seq 1 150); do
+            if ! kill -0 "$app_pid" 2>/dev/null; then
+              cat .ai-artifacts/browser-app.log
+              exit 1
+            fi
+            if curl --fail --silent "$CYPRESS_BASE_URL/health/ready" | grep -q '"status":"ready"'; then
+              ready=true
+              break
+            fi
+            sleep 4
+          done
+          if [ "$ready" != true ]; then
+            cat .ai-artifacts/browser-app.log
+            echo 'Application readiness did not succeed.'
+            exit 1
+          fi
+          npm run test:browser
+      - name: Preserve qualification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-qualification
+          path: |
+            .ai-artifacts/browser-app.log
+            .cypress/screenshots
+          if-no-files-found: warn
+          retention-days: 7

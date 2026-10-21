@@ -5,13 +5,7 @@ import { getHTMLEmailTemplate } from './email';
 import { serverSettings as settings } from '/imports/config/serverSettings';
 import { Mongo } from 'meteor/mongo';
 
-const maxSocialImageBytes = Number(process.env.SOCIAL_IMAGE_MAX_BYTES || 2 * 1024 * 1024);
-const socialImageTimeoutMs = Number(process.env.SOCIAL_IMAGE_TIMEOUT_MS || 5000);
-const defaultAllowedSocialImageHosts = ['googleusercontent.com', 'graph.facebook.com', 'fbcdn.net'];
-const allowedSocialImageHosts = (process.env.SOCIAL_IMAGE_ALLOWED_HOSTS || defaultAllowedSocialImageHosts.join(','))
-	.split(',')
-	.map((host) => host.trim().toLowerCase())
-	.filter(Boolean);
+import { getBase64FromURLImage } from './socialAvatar';
 
 const escapeHtml = (value: unknown) =>
 	String(value ?? '')
@@ -20,46 +14,6 @@ const escapeHtml = (value: unknown) =>
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;');
-
-const isAllowedSocialImageUrl = (urlImage: string) => {
-	try {
-		const imageUrl = new URL(urlImage);
-		const hostname = imageUrl.hostname.toLowerCase();
-		return (
-			imageUrl.protocol === 'https:' &&
-			allowedSocialImageHosts.some((allowedHost) => hostname === allowedHost || hostname.endsWith(`.${allowedHost}`))
-		);
-	} catch (_error) {
-		return false;
-	}
-};
-
-async function getBase64FromURLImage(urlImage: string) {
-	if (!isAllowedSocialImageUrl(urlImage)) {
-		throw new Error('Social image URL is not allowed');
-	}
-
-	const abortController = new AbortController();
-	const timeout = setTimeout(() => abortController.abort(), socialImageTimeoutMs);
-
-	try {
-		const response = await fetch(urlImage, { signal: abortController.signal });
-		if (!response.ok) throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-
-		const contentType = response.headers.get('content-type') || 'application/octet-stream';
-		if (!contentType.toLowerCase().startsWith('image/')) throw new Error(`Invalid image content-type: ${contentType}`);
-
-		const contentLength = Number(response.headers.get('content-length') || 0);
-		if (contentLength > maxSocialImageBytes) throw new Error('Social image exceeds max allowed size');
-
-		const body = Buffer.from(await response.arrayBuffer());
-		if (body.length > maxSocialImageBytes) throw new Error('Social image exceeds max allowed size');
-
-		return `data:${contentType};base64,${body.toString('base64')}`;
-	} finally {
-		clearTimeout(timeout);
-	}
-}
 
 async function updateUserProfileImageFromURL(userId: string | Mongo.ObjectID | Mongo.Selector<any>, urlImage: string) {
 	try {
@@ -80,47 +34,35 @@ async function validateSocialLoginAndUpdateProfile(
 	user: Mongo.OptionalId<any>,
 	serviceName: string
 ) {
+	const profiles = userprofileServerApi.getCollectionInstance();
 	if (!userProfile) {
-		user.roles = ['Usuario'];
-		user.status = 'active';
-		user.otheraccounts = [{ _id: user._id, service: serviceName }];
-		user.createdat = new Date();
-		user.lastupdate = new Date();
-		const userProfileID = await userprofileServerApi.getCollectionInstance().insertAsync(user);
-		delete user.otheraccounts;
-		await Meteor.users.updateAsync(
-			{ _id: user._id },
-			{
-				$set: user
-			}
-		);
-
-		if (user.services && !!user.services.google && user.services.google.picture) {
-			await updateUserProfileImageFromURL(userProfileID, user.services.google.picture);
-		}
-	} else {
-		await Meteor.users.updateAsync(
-			{ _id: user._id },
-			{
-				$set: {
-					profile: user.profile,
-					roles: user.roles ? user.roles : ['Usuario']
+		// Never copy OAuth services, tokens or caller-defined roles to a profile.
+		const profileId = await profiles.insertAsync({
+			_id: user._id,
+			accountId: user._id,
+			username: String(user.username || user.profile?.name || ''),
+			email: String(user.email || ''),
+			roles: ['Usuario'],
+			status: 'active',
+			createdat: new Date(),
+			lastupdate: new Date()
+		});
+		if (user.services?.google?.picture) await updateUserProfileImageFromURL(profileId, user.services.google.picture);
+	} else if (!userProfile.photo && user.services?.google?.picture) {
+		await updateUserProfileImageFromURL(userProfile._id, user.services.google.picture);
+	}
+	// Roles and status have one source of truth: userprofile, not OAuth or account payloads.
+	await Meteor.users.updateAsync(
+		{ _id: user._id },
+		{
+			$set: {
+				profile: {
+					name: String(user.profile?.name || user.username || ''),
+					email: String(user.email || '')
 				}
 			}
-		);
-		await userprofileServerApi.getCollectionInstance().updateAsync(
-			{ _id: userProfile._id },
-			{
-				$addToSet: { otheraccounts: { _id: user._id, service: serviceName } }
-			}
-		);
-
-		if (!userProfile.photo) {
-			if (user.services && !!user.services.google && user.services.google.picture) {
-				await updateUserProfileImageFromURL(userProfile._id, user.services.google.picture);
-			}
 		}
-	}
+	);
 
 	return true;
 }
@@ -132,9 +74,7 @@ async function validateLoginGoogle(user: Meteor.User & { name?: string; email?: 
 	user.name = `${google.name ?? google.email}`;
 	user.email = google.email;
 	const serviceName = 'google';
-	const userProfile = await userprofileServerApi.getCollectionInstance().findOneAsync({
-		email: user.email
-	});
+	const userProfile = await userprofileServerApi.getCollectionInstance().findOneAsync({ accountId: user._id });
 
 	return validateSocialLoginAndUpdateProfile(userProfile, user, serviceName);
 }
@@ -146,9 +86,7 @@ async function validateLoginFacebook(user: Meteor.User & { name?: string; email?
 	user.username = `${facebook.name ?? facebook.email}_facebook`;
 	user.name = `${facebook.name ?? facebook.email}`;
 	user.email = facebook.email;
-	const userProfile = await userprofileServerApi.getCollectionInstance().findOneAsync({
-		email: user.email
-	});
+	const userProfile = await userprofileServerApi.getCollectionInstance().findOneAsync({ accountId: user._id });
 
 	return validateSocialLoginAndUpdateProfile(userProfile, user, serviceName);
 }
@@ -224,7 +162,7 @@ Meteor.startup(() => {
 	Accounts.onLogin(async (params: { user: Meteor.User; connection: { onClose: (arg0: () => void) => void } }) => {
 		//@ts-ignore
 		const userProfile = params.user
-			? await userprofileServerApi.getCollectionInstance().findOneAsync({ email: params.user?.profile?.email })
+			? await userprofileServerApi.getCollectionInstance().findOneAsync({ accountId: params.user._id })
 			: undefined;
 
 		if (userProfile)
@@ -246,7 +184,7 @@ Meteor.startup(() => {
 	Accounts.onLogout(async (params) => {
 		//@ts-ignore
 		const userProfile = params.user
-			? await userprofileServerApi.getCollectionInstance().findOneAsync({ email: params.user?.profile?.email })
+			? await userprofileServerApi.getCollectionInstance().findOneAsync({ accountId: params.user._id })
 			: undefined;
 		if (userProfile)
 			await userprofileServerApi

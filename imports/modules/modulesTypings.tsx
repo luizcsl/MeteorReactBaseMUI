@@ -10,6 +10,8 @@ interface IAppMenu {
 }
 
 interface IRoute {
+	/** UI-only authentication guard; server operations always authorize independently. */
+	authenticatedOnly?: boolean;
 	path?: string;
 	component: React.ReactNode | React.Component | React.FunctionComponent<any> | React.ComponentType<any>;
 	isProtected?: boolean;

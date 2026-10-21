@@ -1,0 +1,12 @@
+import { array, enumeration, id, integer, literal, nullable, strictObject, string, type Infer } from '../../../core/contracts/schema';
+export const taskStatus = enumeration(['open', 'done'] as const);
+export const taskDto = strictObject({ id, title: string(1, 200), status: taskStatus, version: integer(1), createdAt: integer(0), updatedAt: integer(0) });
+export type TaskDto = Infer<typeof taskDto>;
+export const taskCreate = strictObject({ mutationId: id, title: string(1, 200) });
+export const taskUpdate = strictObject({ id, version: integer(1), title: string(1, 200), status: taskStatus });
+export const taskDelete = strictObject({ id, version: integer(1) });
+export const taskGet = strictObject({ id });
+export const taskList = strictObject({ after: nullable(id), limit: integer(1, 100) });
+export const taskPage = strictObject({ items: array(taskDto, 100), next: nullable(id) });
+export const taskDeleted = strictObject({ deleted: literal(true) });
+export const TASKS_METHODS = { create: 'tasks.create', get: 'tasks.get', list: 'tasks.list', update: 'tasks.update', remove: 'tasks.remove' } as const;

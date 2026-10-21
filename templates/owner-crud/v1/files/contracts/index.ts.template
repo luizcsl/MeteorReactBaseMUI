@@ -1,0 +1,12 @@
+import { array, enumeration, id, integer, literal, nullable, strictObject, string, type Infer } from '../../../core/contracts/schema';
+export const __MODULE__Status = enumeration(['open', 'done'] as const);
+export const __MODULE__Dto = strictObject({ id, title: string(1, 200), status: __MODULE__Status, version: integer(1), createdAt: integer(0), updatedAt: integer(0) });
+export type __Module__Dto = Infer<typeof __MODULE__Dto>;
+export const __MODULE__Create = strictObject({ mutationId: id, title: string(1, 200) });
+export const __MODULE__Update = strictObject({ id, version: integer(1), title: string(1, 200), status: __MODULE__Status });
+export const __MODULE__Delete = strictObject({ id, version: integer(1) });
+export const __MODULE__Get = strictObject({ id });
+export const __MODULE__List = strictObject({ after: nullable(id), limit: integer(1, 100) });
+export const __MODULE__Page = strictObject({ items: array(__MODULE__Dto, 100), next: nullable(id) });
+export const __MODULE__Deleted = strictObject({ deleted: literal(true) });
+export const __MODULE_UPPER___METHODS = { create: '__MODULE__.create', get: '__MODULE__.get', list: '__MODULE__.list', update: '__MODULE__.update', remove: '__MODULE__.remove' } as const;

@@ -1,0 +1,17 @@
+import { Meteor } from 'meteor/meteor';
+import { registerOperation } from '../../../core/server/meteor';
+import type { ContextBuilder } from '../../../core/server/operations';
+import { create__Module__Operations } from './operations';
+import { ensure__Module__Indexes, __MODULE__Repository } from './repository';
+let registered = false;
+export function register__Module__(__MODULE__Context: ContextBuilder): void {
+  if (registered) return;
+  const operations = create__Module__Operations(__MODULE__Repository);
+  registerOperation(operations.create, __MODULE__Context);
+  registerOperation(operations.get, __MODULE__Context);
+  registerOperation(operations.list, __MODULE__Context);
+  registerOperation(operations.update, __MODULE__Context);
+  registerOperation(operations.remove, __MODULE__Context);
+  registered = true;
+  Meteor.startup(ensure__Module__Indexes);
+}

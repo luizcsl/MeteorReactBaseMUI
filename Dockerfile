@@ -20,7 +20,7 @@ RUN curl "https://install.meteor.com/?release=${METEOR_VERSION}" | sh
 COPY package.json package-lock.json ./
 COPY .meteor .meteor
 
-RUN meteor npm ci
+RUN CYPRESS_INSTALL_BINARY=0 meteor npm ci
 
 COPY . .
 

@@ -1,8 +1,18 @@
-cypress.config.ts
-.cypress/
-.github/
-melhorias.md
-scripts/
-jatai-web/
+# Development-only toolkit must never enter the application bundle.
+tools/**
+templates/**
+evals/**
+docs/**
+tests/core.node.test.ts
+.ai-artifacts/**
+.generated-staging/**
 
+# Test runner configuration is never application source.
 cypress*.config.ts
+.cypress/**
+# Existing non-application content remains excluded.
+.github/**
+melhorias.md
+scripts/**
+jatai-web/**
+.agent-state/**

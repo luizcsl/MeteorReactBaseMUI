@@ -1,3 +1,4 @@
+import { markStartupComplete } from './readiness';
 import './environment';
 import './health';
 import './browserPolicy';
@@ -13,4 +14,5 @@ import { Meteor } from 'meteor/meteor';
 Meteor.startup(async () => {
 	await FacebookOAuthInit();
 	await GoogleOAuthInit();
+	markStartupComplete('oauth');
 });

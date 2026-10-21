@@ -47,9 +47,12 @@ When('acionei o comando {string} do campo {string}', (name,field) => {
   basicCommands.components.button.click(name,field);
 })
 
-When('informei as credenciais do power ranger vermelho', (name,value) => {
-  cy.get('#email-email').type("wendell.ferreira@sebraemg.com.br");
-  cy.get('#password-password').type("959697");
+When('informei as credenciais do usuário de teste', () => {
+  const email = Cypress.env('TEST_USER_EMAIL');
+  const password = Cypress.env('TEST_USER_PASSWORD');
+  if (!email || !password) throw new Error('Synthetic TEST_USER_EMAIL and TEST_USER_PASSWORD are required');
+  cy.get('#email-email').type(email);
+  cy.get('#password-password').type(password, { log: false });
   cy.get('input[type=submit]').click();
 })
 

@@ -34,7 +34,7 @@ cubra também cenários negativos.
 
 ## Cypress
 
-O Cypress 15 usa [`cypress.config.ts`](../cypress.config.ts) e features em `.cypress/integration`:
+O Cypress 15 usa [`cypress.config.ts`](../cypress.config.ts) e o fluxo canônico em `.cypress/ai-ready/tasks.cy.js`. As features antigas em `.cypress/integration` são referência de migração, não testes executados:
 
 ```bash
 CYPRESS_BASE_URL=http://localhost:3000 npm run cypress:headless
@@ -65,3 +65,9 @@ ausência de risco.
 - [ ] build de produção conclui;
 - [ ] não há segredo, resultado ou artefato gerado no diff;
 - [ ] documentação e `.env.example` acompanham novos contratos.
+
+## Perfil de desenvolvimento com IA
+
+`npm run verify` executa tipos, contratos puros, toolkit, limites arquiteturais, geração isolada, documentação e testes reais de servidor. `npm run templates:runtime` cria um módulo temporário, registra seus métodos e exercita Mongo/DDP sem alterar o registro da aplicação original. O banco deve ser descartável: o runner aceita `TEST_MONGO_URL` apenas em loopback e com nome de banco de teste. Nunca aponte testes para produção.
+
+Os testes de servidor entram por `tests/server.ts`; o módulo client permanece separado. `TEST_SERVER_ONLY=1` impede esperar um navegador que não foi iniciado. E2E é uma qualificação adicional, não substituída por testes unitários. Consulte [evidências e limites](AI_READY_VALIDATION.md).

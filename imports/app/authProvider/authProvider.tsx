@@ -38,12 +38,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 		const subHandle = userprofileApi.subscribe('getLoggedUserProfile');
 
 		const user: IUserProfile | undefined =
-			subHandle?.ready() && meteorUser ? userprofileApi.findOne({ email: (meteorUser?.profile as any).email }) : null;
+			subHandle?.ready() && meteorUser ? userprofileApi.findOne({ accountId: meteorUser._id, status: 'active' }) : null;
 
 		return {
 			user,
-			userLoading: hasValue(meteorUser) && !hasValue(user),
-			isLoggedIn: !!userId && !!meteorUser
+			userLoading: hasValue(meteorUser) && !subHandle?.ready(),
+			isLoggedIn: !!userId && !!meteorUser && !!user
 		};
 	}, []);
 

@@ -77,7 +77,4 @@ autenticado e HTML recebem `no-store`, enquanto assets públicos têm cache espe
 
 ## Limitações atuais
 
-Ainda há infraestrutura genérica e módulos legados que devem migrar para DTOs por caso de uso. A validação de anexos não
-inspeciona magic bytes nem possui antivírus. A identidade entre `Meteor.users` e `userprofile`, mídia base64 e o token
-global de mídia também exigem evolução antes de cenários de maior criticidade. A lista priorizada está em
-[`melhorias.md`](../melhorias.md).
+Ainda há infraestrutura genérica e módulos legados que devem migrar para DTOs por caso de uso. Anexos agora passam por inspeção de assinatura/conteúdo e limite de pixels, mas não por antivírus. A autorização de mídia usa sessão ativa ou capacidade curta por recurso, sem token global; o vínculo de identidade é `accountId`, sem fallback por e-mail. Migrações de perfis órfãos e anexos legados exigem revisão explícita. Veja [migração de mídia](media-migration.md), [limites dos anexos](attachments.md) e [migração AI-ready](MIGRATION_AI_READY.md).

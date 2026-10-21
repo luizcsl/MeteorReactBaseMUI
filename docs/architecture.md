@@ -232,7 +232,7 @@ Uploads gerais usam `attachmentsCollection`, com escrita direta desabilitada, ow
 
 Há duas camadas independentes:
 
-- `jam:offline`: fila de métodos e dados de subscriptions;
+- núcleo online-first; fila offline não instalada;
 - service worker: cache somente de assets públicos e fallback de navegação.
 
 API, DDP, uploads e conteúdo privado nunca entram no cache do worker. Consulte [Offline e PWA](offline.md).
@@ -244,3 +244,6 @@ documental adicional e obrigatória.
 
 Os Subjects de analytics são opcionais e não devem transportar segredos. Logging estruturado e auditoria administrativa
 continuam sendo evoluções recomendadas no backlog. Consulte [Segurança](security.md) e [Analytics](analytics.md).
+
+
+Veja [migração AI-ready](MIGRATION_AI_READY.md) para mudanças de segurança e limites de qualificação.

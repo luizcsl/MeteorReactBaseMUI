@@ -1,3 +1,4 @@
+import { markStartupComplete } from './readiness';
 import { Accounts } from 'meteor/accounts-base';
 import { Meteor } from 'meteor/meteor';
 import { userprofileServerApi } from '../modules/userprofile/api/userProfileServerApi';
@@ -46,6 +47,7 @@ async function createDefaultUser() {
 		{
 			$set: {
 				_id: createdUserId,
+				accountId: createdUserId,
 				username: defaultAdminUsername,
 				email: defaultAdminEmail,
 				roles: ['Administrador'],
@@ -60,4 +62,5 @@ Meteor.startup(async () => {
 	console.log('fixtures Meteor.startup');
 	// Add default admin account
 	await createDefaultUser();
+	markStartupComplete('bootstrap');
 });

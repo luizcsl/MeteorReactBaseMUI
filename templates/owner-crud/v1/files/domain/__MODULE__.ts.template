@@ -1,0 +1,11 @@
+import type { __Module__Dto } from '../contracts';
+import { OperationError } from '../../../core/contracts/errors';
+export function normalize__Module__Title(title: string): string {
+  const result = title.trim();
+  if (!result) throw new OperationError('invalid-input');
+  return result;
+}
+/** Explicit allowlist projection: never spread a persistence document into a response. */
+export function project__Module__(__MODULE__: { _id: string; title: string; status: 'open' | 'done'; version: number; createdAt: number; updatedAt: number }): __Module__Dto {
+  return { id: __MODULE__._id, title: __MODULE__.title, status: __MODULE__.status, version: __MODULE__.version, createdAt: __MODULE__.createdAt, updatedAt: __MODULE__.updatedAt };
+}

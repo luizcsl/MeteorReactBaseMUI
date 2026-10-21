@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "tasks-validation",
+  "objective": "Improve task title validation without weakening ownership or projection.",
+  "acceptance": ["Blank titles rejected", "Existing ownership and negative tests pass"],
+  "allowedPaths": ["imports/modules/tasks/contracts/", "imports/modules/tasks/domain/"],
+  "contextFiles": ["imports/modules/tasks/contracts/index.ts", "imports/modules/tasks/domain/task.ts"],
+  "commands": ["npm run typecheck", "npm run test:security"],
+  "budget": {"seconds": 600, "tokens": 16000, "costUSD": 2, "files": 4, "attempts": 3, "contextBytes": 60000, "contextFiles": 20},
+  "state": "planned"
+}

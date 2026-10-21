@@ -1,0 +1,41 @@
+# Canonical owner CRUD reference
+
+This module is the executable reference for the supported `owner-crud` template. It is intentionally small: title, open/done status, authenticated owner, versioned writes, cursor pagination. It is **not** a universal application generator, offline synchronization protocol, or complete tenant application.
+
+## Composition
+
+Only the server composition root imports `server/register` and calls `register__Module__(context)`. The context is a `ContextBuilder`; construct it with `activeAccountContext` from `core/server/identity`, a server-side active-account lookup, and a request-ID generator. The lookup must bind an immutable authenticated account ID to an active profile, never derive privilege from matching email or request fields. Context is built anew on every request; missing or inactive profiles fail closed.
+
+Add the default `__Module__Page` component to the protected `/__MODULE__` route. Import UI and contracts only on the client. There is no client collection, method simulation, broad publication, or offline queue. The server remains the authorization authority; hiding a UI element is not a permission check.
+
+## Contracts
+
+Every method receives **exactly one** plain-object DTO; all properties listed below are mandatory. Unknown properties are rejected, including `userId`, `ownerId`, roles, tenant IDs and Mongo operators.
+
+| Method | Input | Result |
+| --- | --- | --- |
+| `__MODULE__.create` | `{ mutationId, title }` | __Module__ DTO |
+| `__MODULE__.get` | `{ id }` | __Module__ DTO or `not-found` |
+| `__MODULE__.list` | `{ after: string or null, limit: 1..100 }` | `{ items, next: string or null }` |
+| `__MODULE__.update` | `{ id, version, title, status: "open" or "done" }` | Current __Module__ DTO |
+| `__MODULE__.remove` | `{ id, version }` | `{ deleted: true }` |
+
+A __Module__ DTO contains exactly `id`, `title`, `status`, `version`, `createdAt`, and `updatedAt`. Titles are trimmed and must have 1–200 characters. Times are server-issued epoch milliseconds. The initial version is 1. Owner IDs and tenant scope never leave the server. There are no field defaults silently accepting omitted mutation properties.
+
+Owner scope includes both authenticated owner ID and `tenantId: null`; tenant documents cannot be reached via owner operations. The generic tenant policy in `core/server/policy` requires a fresh server membership lookup and explicit allowed roles. It denies missing/revoked membership, wrong user, wrong tenant and disallowed roles. This reference does not expose tenant endpoints; a tenant module requires its own repository wiring, provisioning, revocation/concurrency policy and integration suite.
+
+## Concurrency and errors
+
+Mongo updates and deletions include owner scope AND expected version in the atomic selector. Concurrent changes from the same base version have at most one winner. Deletion records a tombstone rather than physically removing the record. No-match writes return `conflict` for both stale and inaccessible records, avoiding an existence oracle. Reload before retrying; do not blindly retry writes. The update response is a scoped read of the current record after the atomic mutation, so a subsequent concurrent mutation may already be reflected in it. If that record was deleted concurrently, the update returns `not-found` even though its mutation may have committed. Create uses a required client-generated mutation ID retained across transport retries. Its primary key is a SHA-256 hash of the owner and mutation ID; the database primary-key constraint arbitrates concurrent retries. A duplicate with the same normalized creation title returns the same current scoped record, while a different creation payload returns `conflict`. The mutation ID, original creation title and deletion marker remain server-only. Tombstones retain the key so delayed create replay returns `not-found`, never resurrects a deleted __MODULE__. Do not purge tombstones without defining a bounded deduplication retention protocol. Update/delete retries remain version-CAS safe but may return `conflict` after a lost successful response; reload to reconcile. This is not an exactly-once delivery protocol.
+
+Pagination uses exclusive `_id` order with an extra-row probe. `next` is null on the final page. This is not a snapshot; concurrent inserts/deletes can change later pages. Single-document writes do not need transactions. The optional `core/server/transaction` adapter binds supplied repositories to one caller-provided Mongo session and propagates errors, with no unsafe non-transaction fallback. Multi-document users must supply session-aware repositories and run replica-set rollback tests; the reference does not claim those unexecuted integration guarantees.
+
+Output contracts also validate on the server, and projection is explicit. Operational failures are returned as generic `internal-error`, without database internals. Rate limits are per connection/operation and per authenticated identity/operation in the current Meteor process; multi-replica abuse protection needs deployment-level coordination.
+
+## Verification
+
+- `tests/core.node.test.ts`: deterministic contract, context-shift, scope, tenant-membership, projection, CAS behavior, pagination and transaction-port tests. Its in-memory CAS is an executable model, not evidence of Mongo atomicity.
+- `tests/policy.test.ts`: server-only Meteor test import. Exercises registered wrappers, real Mongo owner/CAS behavior and a real DDP connection rejecting anonymous/forged inputs. Fixtures use a test-only injected identity resolver, not production login provisioning.
+- UI implements logged-out, loading, empty, error, validation, editing, delete confirmation, conflict feedback and pagination states. Pending responses are discarded after account changes. No E2E or accessibility success is implied merely by these states existing.
+
+Do not import `tests/policy.test.ts` in a production entrypoint. It creates test-only methods and fixture identities.

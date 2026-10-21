@@ -73,6 +73,7 @@ export const userProfileSch: ISchema<IUserProfile> = {
 };
 
 export interface IUserProfile extends IDoc {
+	accountId?: string;
 	photo?: string;
 	phone?: string;
 	username: string;

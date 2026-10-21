@@ -12,3 +12,7 @@ jatai-web/
 .env
 .env.*
 !.env.example
+.ai-artifacts/
+.generated-staging/
+
+.agent-state/

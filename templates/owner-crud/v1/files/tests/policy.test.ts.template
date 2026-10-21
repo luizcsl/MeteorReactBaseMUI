@@ -1,0 +1,67 @@
+/// <reference types="mocha" />
+/** Meteor/Mongo integration suite. Import only from the SERVER test entrypoint. */
+import assert from 'node:assert/strict';
+import { Meteor } from 'meteor/meteor';
+import { DDP } from 'meteor/ddp';
+import { registerOperation } from '../../../core/server/meteor';
+import { activeAccountContext } from '../../../core/server/identity';
+import { create__Module__Operations } from '../server/operations';
+import { __MODULE__Repository, __Module__Collection } from '../server/repository';
+import type { __Module__Dto } from '../contracts';
+
+type RegisteredMethod = (this: { userId: string | null }, ...args: unknown[]) => Promise<unknown>;
+const methods = () => (Meteor as unknown as { server: { method_handlers: Record<string, RegisteredMethod> } }).server.method_handlers;
+const alice = '__MODULE__-test-alice';
+const bob = '__MODULE__-test-bob';
+const prefix = '__MODULE__.integration.';
+const context = activeAccountContext(async id => id === alice || id === bob, () => 'integration-request');
+
+if (Meteor.isServer) describe('__MODULE__ registered Meteor boundary and Mongo CAS', function () {
+  this.timeout(20_000);
+  before(async function () {
+    const operations = create__Module__Operations(__MODULE__Repository);
+    registerOperation({ ...operations.create, name: prefix + 'create' }, context);
+    registerOperation({ ...operations.get, name: prefix + 'get' }, context);
+    registerOperation({ ...operations.list, name: prefix + 'list' }, context);
+    registerOperation({ ...operations.update, name: prefix + 'update' }, context);
+    registerOperation({ ...operations.remove, name: prefix + 'remove' }, context);
+    await __Module__Collection.removeAsync({ ownerId: { $in: [alice, bob] } });
+  });
+  after(async () => { await __Module__Collection.removeAsync({ ownerId: { $in: [alice, bob] } }); });
+  const invoke = (operation: string, userId: string | null, ...args: unknown[]) => methods()[prefix + operation].apply({ userId }, args);
+
+  it('rejects anonymous, inactive, extra arguments and unknown fields at registered wrapper', async function () {
+    await assert.rejects(invoke('list', null, { after: null, limit: 5 }), { error: 'unauthenticated' });
+    await assert.rejects(invoke('list', 'disabled', { after: null, limit: 5 }), { error: 'forbidden' });
+    await assert.rejects(invoke('list', bob, { after: null, limit: 5 }, { userId: alice }), { error: 'invalid-input' });
+    await assert.rejects(invoke('create', bob, { title: 'x', ownerId: alice }), { error: 'invalid-input' });
+  });
+  it('isolates owners and performs an atomic version-conditioned Mongo write', async function () {
+    const [__MODULE__, replay] = await Promise.all([
+      invoke('create', alice, { mutationId: 'mongo-create', title: 'Mongo __MODULE__' }),
+      invoke('create', alice, { mutationId: 'mongo-create', title: 'Mongo __MODULE__' })
+    ]) as [__Module__Dto, __Module__Dto];
+    assert.equal('ownerId' in __MODULE__, false);
+    assert.equal(replay.id, __MODULE__.id);
+    await assert.rejects(invoke('create', alice, { mutationId: 'mongo-create', title: 'changed payload' }), { error: 'conflict' });
+    await assert.rejects(invoke('get', bob, { id: __MODULE__.id }), { error: 'not-found' });
+    await assert.rejects(invoke('remove', bob, { id: __MODULE__.id, version: 1 }), { error: 'conflict' });
+    const results = await Promise.allSettled(['A', 'B'].map(title => invoke('update', alice, { id: __MODULE__.id, version: 1, title, status: 'done' })));
+    assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+    const current = await invoke('get', alice, { id: __MODULE__.id }) as __Module__Dto;
+    assert.equal(current.version, 2);
+    assert.deepEqual(await invoke('remove', alice, { id: __MODULE__.id, version: 2 }), { deleted: true });
+    await assert.rejects(invoke('create', alice, { mutationId: 'mongo-create', title: 'Mongo __MODULE__' }), { error: 'not-found' });
+  });
+  it('rejects forged identity over a real DDP connection', async function () {
+    const connection = DDP.connect(Meteor.absoluteUrl());
+    const call = (name: string, ...args: unknown[]) => new Promise((resolve, reject) => {
+      connection.call(name, ...args, (error: Error | undefined, value: unknown) => error ? reject(error) : resolve(value));
+    });
+    try {
+      await assert.rejects(call(prefix + 'list', { after: null, limit: 5 }), { error: 'unauthenticated' });
+      await assert.rejects(call(prefix + 'list', { after: null, limit: 5 }, { userId: alice }), { error: 'invalid-input' });
+      await assert.rejects(call(prefix + 'create', { title: 'bad', userId: alice }), { error: 'invalid-input' });
+    } finally { connection.disconnect(); }
+  });
+});

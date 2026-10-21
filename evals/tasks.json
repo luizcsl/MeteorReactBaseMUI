@@ -1,0 +1,636 @@
+{
+  "version": 1,
+  "phase": "functional-pilot",
+  "tasks": [
+    {
+      "id": "crud-contacts",
+      "category": "crud",
+      "title": "Create owner-scoped contacts CRUD",
+      "prompt": "Create, read, update and delete a contact with name and email. Reject unknown fields and cross-owner access.",
+      "acceptance": [
+        "Create, read, update and delete a contact with name and email. Reject unknown fields and cross-owner access.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-inventory",
+      "category": "crud",
+      "title": "Add tenant inventory CRUD",
+      "prompt": "Create tenant inventory with unique SKU and nonnegative quantity. Reject duplicate SKU within tenant and isolate tenants.",
+      "acceptance": [
+        "Create tenant inventory with unique SKU and nonnegative quantity. Reject duplicate SKU within tenant and isolate tenants.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-projects",
+      "category": "crud",
+      "title": "Add project status transitions",
+      "prompt": "Allow draft to active to archived transitions. Reject archived edits and invalid reverse transitions.",
+      "acceptance": [
+        "Allow draft to active to archived transitions. Reject archived edits and invalid reverse transitions.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-search",
+      "category": "crud",
+      "title": "Add paginated contact search",
+      "prompt": "Filter by normalized name, paginate deterministically with ID tie breaker, and never return another owner\u2019s contact.",
+      "acceptance": [
+        "Filter by normalized name, paginate deterministically with ID tie breaker, and never return another owner\u2019s contact.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-validation",
+      "category": "crud",
+      "title": "Add required contact phone",
+      "prompt": "Validate phone in the shared DTO and UI; reject malformed values over real remote calls and preserve valid existing records.",
+      "acceptance": [
+        "Validate phone in the shared DTO and UI; reject malformed values over real remote calls and preserve valid existing records.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-roles",
+      "category": "crud",
+      "title": "Add tenant administrator archive",
+      "prompt": "Allow tenant admins to archive tenant projects while rejecting ordinary members and admins from another tenant.",
+      "acceptance": [
+        "Allow tenant admins to archive tenant projects while rejecting ordinary members and admins from another tenant.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-optimistic",
+      "category": "crud",
+      "title": "Add optimistic edit conflict",
+      "prompt": "Require expected revision on edits, atomically increment revision and return conflict for stale updates without lost writes.",
+      "acceptance": [
+        "Require expected revision on edits, atomically increment revision and return conflict for stale updates without lost writes.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "crud-audit",
+      "category": "crud",
+      "title": "Add auditable soft deletion",
+      "prompt": "Record server actor and deletion time; hide deleted records from normal reads and reject client-supplied audit identity.",
+      "acceptance": [
+        "Record server actor and deletion time; hide deleted records from normal reads and reject client-supplied audit identity.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-context",
+      "category": "security",
+      "title": "Reject forged remote context",
+      "prompt": "Call the real registered DDP wrapper with extra arguments and context-like fields. Verify anonymous and member callers cannot become administrators.",
+      "acceptance": [
+        "Call the real registered DDP wrapper with extra arguments and context-like fields. Verify anonymous and member callers cannot become administrators.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-earlyreturn",
+      "category": "security",
+      "title": "Authorize mobile idempotent returns",
+      "prompt": "Exercise existing and missing IDs, partial DTOs and foreign owners on mobileUpsert. No unauthorized document may be returned before policy evaluation.",
+      "acceptance": [
+        "Exercise existing and missing IDs, partial DTOs and foreign owners on mobileUpsert. No unauthorized document may be returned before policy evaluation.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-media",
+      "category": "security",
+      "title": "Isolate private file downloads",
+      "prompt": "Give two users different private files. A URL or credential for one must not download the other; test expired signatures and disabled-media-token configuration.",
+      "acceptance": [
+        "Give two users different private files. A URL or credential for one must not download the other; test expired signatures and disabled-media-token configuration.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-projection",
+      "category": "security",
+      "title": "Prevent private field leakage",
+      "prompt": "Insert records with private fields, then exercise list, detail, mobile pull and export. Assert public response keys exactly match the declared projection.",
+      "acceptance": [
+        "Insert records with private fields, then exercise list, detail, mobile pull and export. Assert public response keys exactly match the declared projection.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-limits",
+      "category": "security",
+      "title": "Isolate per-client rate limits",
+      "prompt": "Open two DDP connections. Exhaust one client\u2019s quota and prove the other remains usable; exercise identity limits after reconnect.",
+      "acceptance": [
+        "Open two DDP connections. Exhaust one client\u2019s quota and prove the other remains usable; exercise identity limits after reconnect.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "security-export",
+      "category": "security",
+      "title": "Authorize bounded exports",
+      "prompt": "Verify anonymous and non-admin export rejection over DDP, tenant-scoped administrator export and bounded row count with explicit field projection.",
+      "acceptance": [
+        "Verify anonymous and non-admin export rejection over DDP, tenant-scoped administrator export and bounded row count with explicit field projection.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "ui-states",
+      "category": "ui",
+      "title": "Implement accessible loading and error states",
+      "prompt": "Exercise loading, empty, denied, disconnected and server-error states in a real browser; assert named controls and recovery without stale success.",
+      "acceptance": [
+        "Exercise loading, empty, denied, disconnected and server-error states in a real browser; assert named controls and recovery without stale success.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "ui-form",
+      "category": "ui",
+      "title": "Implement accessible contact form",
+      "prompt": "Complete form using keyboard only, verify labels and focus moves to invalid field, then assert saved values through server read.",
+      "acceptance": [
+        "Complete form using keyboard only, verify labels and focus moves to invalid field, then assert saved values through server read.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "ui-conflict",
+      "category": "ui",
+      "title": "Display edit conflicts without data loss",
+      "prompt": "Open two sessions and edit the same record. Show conflict in stale session, preserve unsaved input and offer reload without silent overwrite.",
+      "acceptance": [
+        "Open two sessions and edit the same record. Show conflict in stale session, preserve unsaved input and offer reload without silent overwrite.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "ui-responsive",
+      "category": "ui",
+      "title": "Make list usable on mobile viewport",
+      "prompt": "At 375px and desktop widths verify no clipped actions or horizontal page overflow; search, pagination and delete confirmation work.",
+      "acceptance": [
+        "At 375px and desktop widths verify no clipped actions or horizontal page overflow; search, pagination and delete confirmation work.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "data-sync-cursor",
+      "category": "data-sync",
+      "title": "Fix equal-timestamp sync pagination",
+      "prompt": "Seed 1201 documents with identical timestamps; drain pages and assert every ID appears once, including equivalent tombstones.",
+      "acceptance": [
+        "Seed 1201 documents with identical timestamps; drain pages and assert every ID appears once, including equivalent tombstones.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "data-sync-cas",
+      "category": "data-sync",
+      "title": "Make simultaneous updates atomic",
+      "prompt": "Synchronize two distinct mutations at the same base revision. Exactly one succeeds and the other conflicts; stored data and revision match winner.",
+      "acceptance": [
+        "Synchronize two distinct mutations at the same base revision. Exactly one succeeds and the other conflicts; stored data and revision match winner.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "data-sync-replay",
+      "category": "data-sync",
+      "title": "Make mutation replay idempotent",
+      "prompt": "Retry the same mutationId after disconnect and prove one effect; same mutationId with changed payload fails, and other users cannot replay it.",
+      "acceptance": [
+        "Retry the same mutationId after disconnect and prove one effect; same mutationId with changed payload fails, and other users cannot replay it.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "data-sync-offline",
+      "category": "data-sync",
+      "title": "Reject disconnected online operations",
+      "prompt": "Disconnect before invoking promise and callback clients. Both settle with stable offline error within timeout, never report queued work as persisted.",
+      "acceptance": [
+        "Disconnect before invoking promise and callback clients. Both settle with stable offline error within timeout, never report queued work as persisted.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "integrations-files-upload",
+      "category": "integrations-files",
+      "title": "Validate uploaded file contents",
+      "prompt": "Upload valid image, extension/MIME mismatch, oversized file and excessive pixel image. Reject unsafe files and clean temporary storage.",
+      "acceptance": [
+        "Upload valid image, extension/MIME mismatch, oversized file and excessive pixel image. Reject unsafe files and clean temporary storage.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "integrations-files-webhook",
+      "category": "integrations-files",
+      "title": "Verify webhook signatures and retries",
+      "prompt": "Test valid signature, tampered body, stale timestamp and duplicate event. Only valid fresh event has one persisted business effect.",
+      "acceptance": [
+        "Test valid signature, tampered body, stale timestamp and duplicate event. Only valid fresh event has one persisted business effect.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "integrations-files-mail",
+      "category": "integrations-files",
+      "title": "Send notification through replaceable mail adapter",
+      "prompt": "Use a local captured-mail sink. Verify recipient and template, timeout handling and bounded retries without duplicate business state changes.",
+      "acceptance": [
+        "Use a local captured-mail sink. Verify recipient and template, timeout handling and bounded retries without duplicate business state changes.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "integrations-files-cleanup",
+      "category": "integrations-files",
+      "title": "Expire abandoned multipart uploads",
+      "prompt": "Create complete and abandoned uploads, advance test clock and run cleanup. Delete only expired incomplete chunks and preserve authorized complete files.",
+      "acceptance": [
+        "Create complete and abandoned uploads, advance test clock and run cleanup. Delete only expired incomplete chunks and preserve authorized complete files.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "regressions-async",
+      "category": "regressions",
+      "title": "Preserve awaited remote failures",
+      "prompt": "Return delayed rejection from method and transaction handlers. Verify client receives stable failure and transaction rollback, with no false early success.",
+      "acceptance": [
+        "Return delayed rejection from method and transaction handlers. Verify client receives stable failure and transaction rollback, with no false early success.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "regressions-status",
+      "category": "regressions",
+      "title": "Preserve user-status privacy",
+      "prompt": "Subscribe anonymously, as ordinary user and administrator. Verify identity and field restrictions against explicit fixtures.",
+      "acceptance": [
+        "Subscribe anonymously, as ordinary user and administrator. Verify identity and field restrictions against explicit fixtures.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "regressions-bootstrap",
+      "category": "regressions",
+      "title": "Preserve explicit administrator bootstrap",
+      "prompt": "Start with bootstrap absent, disabled and explicitly enabled. No implicit default admin appears; enabled path requires valid configured credentials.",
+      "acceptance": [
+        "Start with bootstrap absent, disabled and explicitly enabled. No implicit default admin appears; enabled path requires valid configured credentials.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    },
+    {
+      "id": "regressions-scaffold",
+      "category": "regressions",
+      "title": "Materialize and validate scaffold templates",
+      "prompt": "Generate a fresh module in a temporary repository, compile and execute positive/negative tests, verify registry entries and reject traversal or duplicate module names.",
+      "acceptance": [
+        "Generate a fresh module in a temporary repository, compile and execute positive/negative tests, verify registry entries and reject traversal or duplicate module names.",
+        "Run independent acceptance, security, regression and changed-file scope checks; preserve command logs and verified artifact hashes."
+      ],
+      "budget": {
+        "maxAttempts": 3,
+        "maxSeconds": 1800,
+        "maxCostUsd": 5
+      },
+      "requiredEvidence": [
+        "acceptance",
+        "security",
+        "regression",
+        "scope"
+      ]
+    }
+  ]
+}

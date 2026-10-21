@@ -19,6 +19,23 @@
     "visualize": "meteor --production --extra-packages bundle-visualizer",
     "cypress:gui": "cypress open",
     "cypress:headless": "cypress run",
+    "doctor": "node tools/cli.mjs doctor",
+    "module:new": "node tools/cli.mjs module:new",
+    "agent:context": "node tools/cli.mjs agent:context",
+    "task:validate": "node tools/cli.mjs task:validate",
+    "task:state": "node tools/cli.mjs task:state",
+    "patch:check": "node tools/cli.mjs patch:check",
+    "boundaries:check": "node tools/cli.mjs boundaries:check",
+    "docs:verify": "node tools/cli.mjs docs:verify",
+    "templates:verify": "node tools/cli.mjs templates:verify",
+    "check:changed": "node tools/cli.mjs check:changed",
+    "test:toolkit": "node --test tools/test/*.test.mjs evals/*.test.mjs",
+    "test:security": "TEST_SERVER_ONLY=1 meteor test --once --driver-package meteortesting:mocha --port 3102",
+    "verify": "npm run typecheck && npm run test:core && npm run test:toolkit && npm run boundaries:check && npm run templates:verify && npm run docs:verify && npm run test:security",
+    "verify:release": "npm run verify && npm run templates:runtime && npm run test:browser && meteor build /tmp/meteor-release-build --directory",
+    "test:core": "node tools/run-core-tests.mjs",
+    "eval:agents": "node evals/report.mjs",
+    "templates:runtime": "node tools/verify-template-runtime.mjs",
     "test:browser": "cypress run --config-file cypress.ai-ready.config.ts"
   },
   "dependencies": {
@@ -79,7 +96,7 @@
   "meteor": {
     "testModule": {
       "client": "tests/main.ts",
-      "server": "tests/main.ts"
+      "server": "tests/server.ts"
     }
   },
   "overrides": {

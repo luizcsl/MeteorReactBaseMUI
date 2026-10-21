@@ -4,6 +4,10 @@ Boilerplate modular para aplicações Meteor, React e Material UI, mantido pela 
 publicações reativas, autenticação, controle de acesso por recursos, formulários orientados a schema, tabelas, uploads,
 Docker e ferramentas de qualidade.
 
+## Desenvolvimento com IA
+
+Leia [AI Development](docs/AI_DEVELOPMENT.md), [contrato do harness Synergia Code](docs/HARNESS_SYNERGIA.md), [migração](docs/MIGRATION_AI_READY.md) e [evidências de validação](docs/AI_READY_VALIDATION.md). O caminho novo usa contratos executáveis, CRUD de referência e ferramentas determinísticas; não exige LLM em runtime.
+
 ## Stack atual
 
 - Meteor 3.5 com Node.js 24.15 no build e no runtime Docker;
@@ -31,7 +35,7 @@ As versões exatas estão em [`.meteor/release`](.meteor/release), [`.meteor/pac
 - code splitting das rotas principais;
 - health checks, Docker multi-stage e execução sem `root`;
 - service worker seguro e exclusivo de produção;
-- suporte offline de métodos e subscrições por `jam:offline`.
+- núcleo online-first, com erros explícitos em desconexão; sincronização móvel é uma capacidade opcional.
 
 > A infraestrutura genérica não substitui regras de negócio. Cada publicação e método deve restringir explicitamente os
 > documentos ao usuário ou tenant autorizado.
@@ -93,7 +97,7 @@ consulte [Configuração e variáveis de ambiente](docs/configuration.md).
 Regras importantes:
 
 - `ROOT_URL` e `MONGO_URL` são obrigatórias em produção;
-- `MEDIA_ACCESS_TOKEN` deve ter pelo menos 32 caracteres em produção;
+- `MEDIA_SIGNING_KEY` deve ter pelo menos 48 caracteres em produção;
 - `CORS_ORIGINS=*` é rejeitado em produção;
 - credenciais Google, Facebook e SMTP devem ser definidas em conjuntos completos;
 - limites numéricos precisam ser inteiros positivos;
@@ -242,7 +246,7 @@ Estratégias atuais:
 - API, DDP, uploads, conteúdo privado e métodos diferentes de `GET`: rede sem cache.
 
 Atualizações aguardam confirmação antes de `skipWaiting`, evitando misturar HTML antigo e chunks novos. O cache de assets
-é independente da fila de operações do `jam:offline`. Consulte [Offline e PWA](docs/offline.md).
+não implementa fila de operações offline. Consulte [Offline e PWA](docs/offline.md).
 
 ## Testes e gates
 

@@ -24,7 +24,7 @@ export const AppRouterSwitch: React.FC = React.memo(() => {
 		if(!route.isProtected) return <ScreenRouteRender {...route} />;
 		if (!isLoggedIn) return <ScreenRouteRender component={SignInPage} templateVariant="None" />;
 		
-		const hasAccess = segurancaApi.podeAcessarRecurso(getUser(), ...(route.resources || []));
+		const hasAccess = route.authenticatedOnly === true || segurancaApi.podeAcessarRecurso(getUser(), ...(route.resources || []));
 		return hasAccess ? <ScreenRouteRender {...route} /> : <ScreenRouteRender component={SignInPage} templateVariant="None" />;
 	};
 	

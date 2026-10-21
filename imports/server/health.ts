@@ -1,3 +1,4 @@
+import { isStartupComplete } from './readiness';
 import { MongoInternals } from 'meteor/mongo';
 import { WebApp } from 'meteor/webapp';
 
@@ -13,6 +14,10 @@ WebApp.connectHandlers.use('/health/live', (_req, res) => json(res, 200, { statu
 
 WebApp.connectHandlers.use('/health/ready', async (_req, res) => {
 	try {
+		if (!isStartupComplete()) {
+			json(res, 503, { status: 'initializing' });
+			return;
+		}
 		const { client } = MongoInternals.defaultRemoteCollectionDriver().mongo;
 		await client.db().command({ ping: 1 });
 		json(res, 200, { status: 'ready' });

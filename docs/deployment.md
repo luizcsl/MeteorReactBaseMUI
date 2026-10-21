@@ -22,7 +22,7 @@ No runtime de produção, forneça ao menos:
 - `NODE_ENV=production`;
 - `ROOT_URL` com a URL HTTPS externa;
 - `MONGO_URL`;
-- `MEDIA_ACCESS_TOKEN` aleatório com 32 ou mais caracteres;
+- `MEDIA_SIGNING_KEY` aleatório com 32 ou mais caracteres;
 - `CORS_ORIGINS` com origens exatas;
 - volume persistente em `UPLOADS_DIR`.
 
@@ -45,7 +45,7 @@ O proxy reverso deve:
 ## Health checks
 
 - `GET /health/live`: processo HTTP está respondendo;
-- `GET /health/ready`: aplicação consegue executar `ping` no MongoDB.
+- `GET /health/ready`: Mongo responde e as etapas obrigatórias de índices, identidade e bootstrap terminaram; falhas mantêm a réplica indisponível.
 
 Use liveness apenas para reinício e readiness para retirar uma réplica do balanceador. Os endpoints não expõem
 configuração nem detalhes do banco.

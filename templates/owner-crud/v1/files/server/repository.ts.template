@@ -1,0 +1,36 @@
+import { Mongo } from 'meteor/mongo';
+import { scopeSelector, type Scope } from '../../../core/server/policy';
+export interface __Module__Record { _id: string; ownerId: string; tenantId: string | null; title: string; status: 'open' | 'done'; version: number; createdAt: number; updatedAt: number; mutationId: string; creationTitle: string; deletedAt: number | null }
+export interface __Module__Repository {
+  insert(record: __Module__Record): Promise<__Module__Record>;
+  get(scope: Scope, id: string): Promise<__Module__Record | null>;
+  list(scope: Scope, after: string | null, limit: number): Promise<__Module__Record[]>;
+  update(scope: Scope, id: string, version: number, patch: Pick<__Module__Record, 'title' | 'status' | 'updatedAt'>): Promise<boolean>;
+  remove(scope: Scope, id: string, version: number): Promise<boolean>;
+}
+export const __Module__Collection = new Mongo.Collection<__Module__Record>('ai___MODULE__');
+__Module__Collection.deny({ insert: () => true, update: () => true, remove: () => true });
+export const __MODULE__Repository: __Module__Repository = {
+  async insert(record) {
+    try { await __Module__Collection.insertAsync(record); return record; }
+    catch (error) {
+      if ((error as { code?: number }).code !== 11000) throw error;
+      // The deterministic primary key provides uniqueness without an index startup race.
+      const existing = await __Module__Collection.findOneAsync({ _id: record._id, ownerId: record.ownerId, tenantId: null });
+      if (!existing) throw error;
+      return existing;
+    }
+  },
+  async get(scope, id) { return await __Module__Collection.findOneAsync({ _id: id, deletedAt: null, ...scopeSelector(scope) }) ?? null; },
+  async list(scope, after, limit) {
+    return __Module__Collection.find({ ...scopeSelector(scope), deletedAt: null, ...(after === null ? {} : { _id: { $gt: after } }) }, { sort: { _id: 1 }, limit }).fetchAsync();
+  },
+  async update(scope, id, version, patch) {
+    // Scope + version in the atomic write, not a read-then-write check.
+    return await __Module__Collection.updateAsync({ _id: id, version, deletedAt: null, ...scopeSelector(scope) }, { $set: patch, $inc: { version: 1 } }) === 1;
+  },
+  async remove(scope, id, version) { return await __Module__Collection.updateAsync({ _id: id, version, deletedAt: null, ...scopeSelector(scope) }, { $set: { deletedAt: Date.now() }, $inc: { version: 1 } }) === 1; }
+};
+export async function ensure__Module__Indexes(): Promise<void> {
+  await __Module__Collection.createIndexAsync({ ownerId: 1, tenantId: 1, _id: 1 });
+}

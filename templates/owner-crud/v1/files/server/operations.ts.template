@@ -1,0 +1,49 @@
+import { createHash } from 'node:crypto';
+import { OperationError, type Operation, type TrustedContext } from '../../../core/server/operations';
+import { ownerScope } from '../../../core/server/policy';
+import { __MODULE__Create, __MODULE__Delete, __MODULE__Deleted, __MODULE__Dto, __MODULE__Get, __MODULE__List, __MODULE__Page, __MODULE__Update, __MODULE_UPPER___METHODS } from '../contracts';
+import { normalize__Module__Title, project__Module__ } from '../domain/__MODULE__';
+import type { __Module__Repository } from './repository';
+import type { Infer } from '../../../core/contracts/schema';
+const authenticatedOwner = async (ctx: TrustedContext) => { ownerScope(ctx); };
+export function create__Module__Operations(repository: __Module__Repository, now = Date.now) {
+  const create: Operation<Infer<typeof __MODULE__Create>, Infer<typeof __MODULE__Dto>> = {
+    name: __MODULE_UPPER___METHODS.create, input: __MODULE__Create, output: __MODULE__Dto, effect: 'write', policy: authenticatedOwner,
+    async handler(ctx, input) {
+      const timestamp = now();
+      const title = normalize__Module__Title(input.title);
+      const id = createHash('sha256').update(JSON.stringify([ctx.userId, input.mutationId])).digest('hex');
+      const record = { _id: id, ownerId: ctx.userId, tenantId: null, mutationId: input.mutationId, creationTitle: title, deletedAt: null, title, status: 'open' as const, version: 1, createdAt: timestamp, updatedAt: timestamp };
+      const stored = await repository.insert(record);
+      if (stored.ownerId !== ctx.userId || stored.tenantId !== null || stored.mutationId !== input.mutationId || stored.creationTitle !== title) throw new OperationError('conflict');
+      if (stored.deletedAt !== null) throw new OperationError('not-found');
+      return project__Module__(stored);
+    }
+  };
+  const get: Operation<Infer<typeof __MODULE__Get>, Infer<typeof __MODULE__Dto>> = {
+    name: __MODULE_UPPER___METHODS.get, input: __MODULE__Get, output: __MODULE__Dto, effect: 'read', policy: authenticatedOwner,
+    async handler(ctx, input) { const record = await repository.get(ownerScope(ctx), input.id); if (!record) throw new OperationError('not-found'); return project__Module__(record); }
+  };
+  const list: Operation<Infer<typeof __MODULE__List>, Infer<typeof __MODULE__Page>> = {
+    name: __MODULE_UPPER___METHODS.list, input: __MODULE__List, output: __MODULE__Page, effect: 'read', policy: authenticatedOwner,
+    async handler(ctx, input) {
+      const rows = await repository.list(ownerScope(ctx), input.after, input.limit + 1);
+      const items = rows.slice(0, input.limit).map(project__Module__);
+      return { items, next: rows.length > input.limit ? items[items.length - 1].id : null };
+    }
+  };
+  const update: Operation<Infer<typeof __MODULE__Update>, Infer<typeof __MODULE__Dto>> = {
+    name: __MODULE_UPPER___METHODS.update, input: __MODULE__Update, output: __MODULE__Dto, effect: 'write', policy: authenticatedOwner,
+    async handler(ctx, input) {
+      const scope = ownerScope(ctx);
+      if (!await repository.update(scope, input.id, input.version, { title: normalize__Module__Title(input.title), status: input.status, updatedAt: now() })) throw new OperationError('conflict');
+      const record = await repository.get(scope, input.id);
+      if (!record) throw new OperationError('not-found'); return project__Module__(record);
+    }
+  };
+  const remove: Operation<Infer<typeof __MODULE__Delete>, Infer<typeof __MODULE__Deleted>> = {
+    name: __MODULE_UPPER___METHODS.remove, input: __MODULE__Delete, output: __MODULE__Deleted, effect: 'write', policy: authenticatedOwner,
+    async handler(ctx, input) { if (!await repository.remove(ownerScope(ctx), input.id, input.version)) throw new OperationError('conflict'); return { deleted: true }; }
+  };
+  return { create, get, list, update, remove };
+}

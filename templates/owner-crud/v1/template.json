@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "templateVersion": "1.0.0",
+  "profile": "owner-crud",
+  "fields": {
+    "title": "trimmed string 1..200",
+    "status": "open | done",
+    "mutationId": "client-generated stable create retry key; owner-bound server primary key"
+  },
+  "unsupportedProfiles": [
+    "tenant",
+    "files",
+    "integrations",
+    "offline",
+    "ai-runtime"
+  ],
+  "sha256": {
+    "contracts/index.ts.template": "73443ea45ffef15b3d7534f9edba480d51fff10ea923507e6630256bcd1cb863",
+    "domain/__MODULE__.ts.template": "ef46a5fa7f03a1bec865500d276e96d857536a0350a68303b110e5c3bba49c6b",
+    "README.md.template": "9aa66190e6921f0641595d49e218dbd0fad30a379af063175e8c9a1d84778ebf",
+    "server/operations.ts.template": "0de9be45e861b33b30371f833c0c53c288a5ae83b531fed065ceb8a7bcbc869b",
+    "server/register.ts.template": "605bd7a0799390fa9badd6bd6270b70bb2915d0f18c0ee94837a932fa8db2d7f",
+    "server/repository.ts.template": "65b3890566e6d7530d0e9270bfb45639db3b2214c875c4f87a66942084e895b6",
+    "tests/policy.test.ts.template": "a875cedb37bb0247276d8ba8da9a7eac4e0ccab85b48157e7a5ff6ad59160438",
+    "ui/__Module__Page.tsx.template": "22b1d81b6b52f2a81d63ee8277c9cad1774f79355f33b6e6333c19ce698adb95"
+  }
+}

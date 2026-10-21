@@ -28,20 +28,11 @@ export const getUserProfileSelector = (user: {
 	profile?: { email?: string };
 	emails?: Array<{ address: string }>;
 }) => {
-	const email = user.profile?.email || user.emails?.[0]?.address;
-	const selectors: Record<string, unknown>[] = [{ _id: user._id }, { 'otheraccounts._id': user._id }];
-	if (email) selectors.push({ email });
-	return { $or: selectors };
+	return { accountId: user._id };
 };
 
-const getProfileAccountIds = (profile: IUserProfile & { otheraccounts?: Array<{ _id?: string }> }) =>
-	Array.from(
-		new Set(
-			[profile._id, ...(profile.otheraccounts || []).map((account) => account._id)].filter(
-				(accountId): accountId is string => typeof accountId === 'string' && accountId.length > 0
-			)
-		)
-	);
+const getProfileAccountIds = (profile: IUserProfile) => (profile.accountId ? [profile.accountId] : []);
+
 const emailRequestPattern = Match.Where((value: unknown) => {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
 	const data = value as Record<string, unknown>;
@@ -199,6 +190,7 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 				{
 					limit: 1,
 					projection: {
+						accountId: 1,
 						photo: 1,
 						username: 1,
 						email: 1,
@@ -294,59 +286,19 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 					dataObj.roles.push('Usuario');
 				}
 
-				const userProfile = await this.collectionInstance.findOneAsync({
-					email: dataObj.email
-				});
-				if (!userProfile) {
-					dataObj.otheraccounts = [
-						{
-							_id: dataObj._id,
-							service: settings.service
-						}
-					];
-
-					insertId = await this.collectionInstance.insertAsync(dataObj);
-
-					delete dataObj.otheraccounts;
-					await Meteor.users.updateAsync(
-						{ _id: dataObj._id || insertId },
-						{
-							$set: {
-								profile: {
-									name: dataObj.username,
-									email: dataObj.email
-								},
-								roles: dataObj.roles
+				dataObj.accountId = dataObj._id;
+				insertId = await this.collectionInstance.insertAsync(dataObj);
+				await Meteor.users.updateAsync(
+					{ _id: dataObj._id },
+					{
+						$set: {
+							profile: {
+								name: dataObj.username,
+								email: dataObj.email
 							}
 						}
-					);
-				} else {
-					insertId = userProfile._id;
-
-					await Meteor.users.updateAsync(
-						{ _id: dataObj._id },
-						{
-							$set: {
-								profile: {
-									name: dataObj.username,
-									email: dataObj.email
-								},
-								roles: dataObj.roles
-							}
-						}
-					);
-					await this.collectionInstance.updateAsync(
-						{ _id: userProfile._id },
-						{
-							$addToSet: {
-								otheraccounts: {
-									_id: dataObj._id,
-									service: settings.service
-								}
-							}
-						}
-					);
-				}
+					}
+				);
 
 				dataObj.password = password;
 
@@ -454,6 +406,8 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 	};
 
 	async beforeInsert(docObj: IUserProfile, context: IContext) {
+		delete docObj.accountId;
+		delete (docObj as any).otheraccounts;
 		if (!docObj.status) docObj.status = 'disabled';
 		if (!isAdminUser(context.user)) {
 			docObj.roles = [EnumUserRoles.USUARIO];
@@ -474,16 +428,19 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 	async beforeUpdate(docObj: IUserProfile, context: IContext) {
 		const user = context.user;
 		if (
-			!docObj._id ||
-			(user && user._id !== docObj._id && user && user.roles && user.roles.indexOf('Administrador') === -1)
+			!user?._id ||
+			user.status === 'disabled' ||
+			Object.prototype.hasOwnProperty.call(docObj, 'accountId') ||
+			Object.prototype.hasOwnProperty.call(docObj, 'otheraccounts')
 		) {
-			throw new Meteor.Error('Acesso negado', `Vocẽ não tem permissão para alterar esses dados`);
+			throw new Meteor.Error('not-authorized', 'Vínculo de conta imutável.');
 		}
-
-		if (user && user.roles && user.roles.indexOf('Administrador') === -1) {
-			// prevent user change your self roles
-			if (docObj && docObj.roles) delete docObj.roles;
-			if (docObj && docObj.status) delete docObj.status;
+		if (!docObj._id || (user._id !== docObj._id && !isAdminUser(user))) {
+			throw new Meteor.Error('not-authorized', 'Você não tem permissão para alterar esses dados.');
+		}
+		if (!isAdminUser(user)) {
+			delete docObj.roles;
+			delete docObj.status;
 		}
 
 		const storedProfile = await this.collectionInstance.findOneAsync({ _id: docObj._id });
@@ -526,7 +483,9 @@ class UserProfileServerApi extends ProductServerBase<IUserProfile> {
 		const storedProfile = (await this.collectionInstance.findOneAsync({ _id: docObj._id })) as
 			| (IUserProfile & { otheraccounts?: Array<{ _id?: string }> })
 			| undefined;
-		await Meteor.users.removeAsync({ _id: { $in: storedProfile ? getProfileAccountIds(storedProfile) : [docObj._id] } });
+		await Meteor.users.removeAsync({
+			_id: { $in: storedProfile ? getProfileAccountIds(storedProfile) : getProfileAccountIds(docObj as IUserProfile) }
+		});
 		return true;
 	}
 }

@@ -1,28 +1,57 @@
 name: CI
-
 on:
   pull_request:
   push:
-    branches: [main, master]
-
+    branches: [main, master, 'feat/**']
+permissions:
+  contents: read
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 24.15.0
+          node-version: 24.19.0
           cache: npm
-      - name: Install Meteor 3.5
-        run: curl "https://install.meteor.com/?release=3.5" | sh
+      - name: Install pinned Meteor release
+        run: |
+          curl --fail --show-error --silent 'https://install.meteor.com/?release=3.5' -o /tmp/install-meteor.sh
+          sh /tmp/install-meteor.sh
+          echo "$HOME/.meteor" >> "$GITHUB_PATH"
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm test -- --port 3102
-      - run: meteor build /tmp/meteor-build --directory
-      - run: npm audit --omit=dev --audit-level=high
+      - name: Deterministic gates
+        run: |
+          npm run typecheck
+          npm run test:core
+          npm run test:toolkit
+          npm run boundaries:check
+          npm run templates:verify
+          npm run docs:verify
+      - name: Real Meteor, Mongo, DDP and HTTP security suites
+        run: |
+          set -o pipefail
+          npm run test:security 2>&1 | tee /tmp/security-tests.log
+          grep -Eq '[1-9][0-9]* passing' /tmp/security-tests.log
+          ! grep -Eq '[1-9][0-9]* failing' /tmp/security-tests.log
+      - name: Generated module registration, Mongo and DDP qualification
+        run: |
+          set -o pipefail
+          npm run templates:runtime 2>&1 | tee /tmp/template-runtime-tests.log
+      - name: Build all application targets
+        run: meteor build /tmp/meteor-build --directory
+      - name: Production vulnerability gate
+        run: npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: security-test-evidence
+          path: |
+            /tmp/security-tests.log
+            /tmp/template-runtime-tests.log
+          if-no-files-found: warn
+          retention-days: 14

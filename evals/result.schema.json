@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/meteor-ai-ready/evals/result.schema.json",
+  "title": "Independent task execution evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "campaignId",
+    "taskId",
+    "arm",
+    "repetition",
+    "startCommit",
+    "endCommit",
+    "fixture",
+    "status",
+    "attempts"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "campaignId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskId": {
+      "enum": [
+        "crud-contacts",
+        "crud-inventory",
+        "crud-projects",
+        "crud-search",
+        "crud-validation",
+        "crud-roles",
+        "crud-optimistic",
+        "crud-audit",
+        "security-context",
+        "security-earlyreturn",
+        "security-media",
+        "security-projection",
+        "security-limits",
+        "security-export",
+        "ui-states",
+        "ui-form",
+        "ui-conflict",
+        "ui-responsive",
+        "data-sync-cursor",
+        "data-sync-cas",
+        "data-sync-replay",
+        "data-sync-offline",
+        "integrations-files-upload",
+        "integrations-files-webhook",
+        "integrations-files-mail",
+        "integrations-files-cleanup",
+        "regressions-async",
+        "regressions-status",
+        "regressions-bootstrap",
+        "regressions-scaffold"
+      ]
+    },
+    "arm": {
+      "enum": [
+        "original",
+        "docs",
+        "contracts"
+      ]
+    },
+    "repetition": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "startCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "endCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "fixture": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "aborted"
+      ]
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "seconds",
+          "costUsd",
+          "humanInterventions",
+          "changedFiles",
+          "checks"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "costUsd": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "humanInterventions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "changedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "checks": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "command",
+                "verifier",
+                "exitCode",
+                "artifact",
+                "sha256"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "acceptance",
+                    "security",
+                    "regression",
+                    "scope"
+                  ]
+                },
+                "command": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "verifier": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "exitCode": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "artifact": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
