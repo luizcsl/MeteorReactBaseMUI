@@ -31,9 +31,9 @@ The final local and CI evidence is recorded below after execution. A failed, una
 - Templates: six generator safety/drift tests and isolated generated TypeScript/registration compilation passed.
 - Generated module runtime: 5/5 passed through registered namespace, real Mongo and real DDP (owner isolation, CAS, concurrent create replay, malformed/anonymous denial).
 - Real application server suite: 33/33 passed through Meteor 3.5 / MongoDB 7.0.16, including negative DDP and actual HTTP media tests. The mixed-writer test stubs only audit identity lookup outside MethodInvocation, not authorization, schema or persistence. Mongo was a standalone disposable local instance; replica-set transaction rollback is not qualified.
-- Full production Meteor build: passed; final rebuild after removing accidental client/server import is recorded separately below.
+- Full production Meteor build: passed (exit 0), including final rebuild after removing accidental client/server import. Only upstream url.parse/Browserslist age warnings remain; no unresolved async_hooks import remains.
 - Full and production npm audit: zero high/critical, two moderate vendored browser-polyfill advisories remain. See [dependency evidence](DEPENDENCY_SECURITY.md).
-- Browser: local execution blocked by browser launch restrictions, and the existing cloud-browser route denied local page access. No browser pass claimed. Dedicated CI workflow is executable and pending exact-commit results.
+- Browser: local execution blocked by browser launch restrictions, and the existing cloud-browser route denied local page access. No browser pass claimed. Dedicated CI workflow is executable but has not run remotely; branch publication awaits explicit approval.
 - Independent adversarial review found issues in mixed-writer revision, direct media active-profile checks, migration/version path consistency, crash lock recovery, create replay and ignored-source patch scope. Fixes and regressions were added. This is not an independent penetration-test certification.
 - Real-model benchmark, representative application pilots, Docker image scan, replica-set rollback and backup restoration: not executed. Their protocols/gates do not constitute a pass.
 
