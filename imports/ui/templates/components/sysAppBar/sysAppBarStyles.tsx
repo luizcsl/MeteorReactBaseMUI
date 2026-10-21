@@ -22,7 +22,9 @@ const SysAppBarStyles: ISysAppBarStyles = {
   container: styled(Box)(({ theme }) => ({
     display: 'flex',
     flexGrow: 1,
-    flexShrink: 0,
+    flexShrink: 1,
+    width: '100%',
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'space-between',
     maxWidth: sysSizing.maxDisplayWidth,
@@ -37,7 +39,7 @@ const SysAppBarStyles: ISysAppBarStyles = {
     justifyContent: 'flex-end',
     gap: sysSizing.spacingRemMd,
     paddingRight: sysSizing.spacingFixedMd,
-    [theme.breakpoints.down('md')]: { display: 'none' },
+    [theme.breakpoints.down('lg')]: { display: 'none' },
   })),
   navContainerMobile: styled(Box)(({ theme }) => ({
     display: 'none',
@@ -45,7 +47,7 @@ const SysAppBarStyles: ISysAppBarStyles = {
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingRight: sysSizing.spacingFixedMd,
-    [theme.breakpoints.down('md')]: { display: 'flex' },
+    [theme.breakpoints.down('lg')]: { display: 'flex' },
   })),
   iconButton: styled(IconButton)(({theme}) => ({
     color: theme.palette.primary.contrastText,

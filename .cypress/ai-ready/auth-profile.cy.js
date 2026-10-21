@@ -76,9 +76,16 @@ describe('authentication and profile security through the browser', () => {
     loginWithForm();
     cy.visit('/tasks');
     cy.contains('h1', 'Tarefas').should('be.visible');
-    // Existing avatar has no accessible button label; use the stable MUI slot,
-    // not an emotion hash. This selector is documented until avatar accessibility improves.
-    cy.get('.MuiAvatar-root').filter(':visible').first().click();
+    for (const width of [375, 1000, 1440]) {
+      cy.viewport(width, 800);
+      cy.get('button[aria-label="Menu do usuário"]').should('be.visible').then(button => {
+        const rect = button[0].getBoundingClientRect();
+        expect(rect.left, 'menu inside viewport').to.be.at.least(0);
+        expect(rect.right, 'menu inside viewport').to.be.at.most(width);
+      });
+    }
+    cy.viewport(1000, 660);
+    cy.get('button[aria-label="Menu do usuário"]').click();
     cy.get('.MuiMenu-root').contains('p', /^Sair$/).click();
     cy.window().should(win => expect(win.Meteor.userId()).to.equal(null));
     cy.contains('Acesse o sistema').should('be.visible');

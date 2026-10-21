@@ -1,4 +1,5 @@
 import React, { Fragment, ReactNode, useContext } from 'react';
+import IconButton from '@mui/material/IconButton';
 import Styles from './sysAppBarStyles';
 import Context, { ISysAppBarContext } from './sysAppBarContext';
 import sysRoutes from '/imports/app/routes/routes';
@@ -31,7 +32,7 @@ const SysAppBarView: React.FC<ISysAppBar> = ({logo}) => {
         </Styles.navContainerDesktop>
         <Styles.navContainerMobile>
           <Fragment>
-            <Styles.iconButton onClick={controller.abrirMenuMobile}>
+            <Styles.iconButton aria-label="Abrir navegação" aria-haspopup="menu" onClick={controller.abrirMenuMobile}>
               <SysIcon name='menu' sx={{ width: '24px', height: '24px' }}/>
             </Styles.iconButton>
             <SysMenu
@@ -45,12 +46,9 @@ const SysAppBarView: React.FC<ISysAppBar> = ({logo}) => {
           </Fragment>
         </Styles.navContainerMobile>
         <Fragment>
-          <SysAvatar 
-            name={ controller.userName } 
-            activateOutline
-            onClick={controller.abrirMenuPerfil}
-            size='large'
-          />
+          <IconButton aria-label="Menu do usuário" aria-haspopup="menu" onClick={controller.abrirMenuPerfil} sx={{ flexShrink: 0 }}>
+            <SysAvatar name={controller.userName} activateOutline size="large" />
+          </IconButton>
           <SysMenu
               ref={controller.menuPerfilRef}
               options={controller.getOpcoesMenuDeUsuario()}
